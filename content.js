@@ -1,22 +1,40 @@
 (function () {
   const SCRAPE_ACTION = "SCRAPE_UNRESOLVED_CONVERSATIONS";
+  const GET_DEFAULT_USER_ACTION = "GET_DEFAULT_GIT_USERNAME";
+  console.log("[Gitea PR Review Exporter] content script started on", window.location.href);
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (!message || message.type !== SCRAPE_ACTION) {
+    if (!message || !message.type) {
       return;
     }
 
-    scrapeUnresolvedConversations()
-      .then((result) => sendResponse({ ok: true, result }))
-      .catch((error) => sendResponse({ ok: false, error: error.message || String(error) }));
+    if (message.type === SCRAPE_ACTION) {
+      scrapeUnresolvedConversations(message.options || {})
+        .then((result) => sendResponse({ ok: true, result }))
+        .catch((error) => sendResponse({ ok: false, error: error.message || String(error) }));
+      return true;
+    }
 
-    return true;
+    if (message.type === GET_DEFAULT_USER_ACTION) {
+      try {
+        const username = detectDefaultGitUserName();
+        sendResponse({ ok: true, username });
+      } catch (error) {
+        sendResponse({ ok: false, error: error.message || String(error) });
+      }
+      return;
+    }
+
+    return;
   });
 
-  async function scrapeUnresolvedConversations() {
+  async function scrapeUnresolvedConversations(options) {
     if (!isLikelyGiteaPrPage(window.location, document)) {
       throw new Error("This tab does not look like a Gitea pull request files/conversation page.");
     }
+
+    const normalizedUserName = normalizeUserName(options.userName || "");
+    const ignoreWhereLastCommentIsFromUser = Boolean(options.ignoreWhereLastCommentIsFromUser);
 
     await expandGlobalHiddenConversationAreas();
 
@@ -42,6 +60,9 @@
       if (!conversation) {
         continue;
       }
+      if (ignoreWhereLastCommentIsFromUser && normalizedUserName && isLastCommentFromUser(conversation, normalizedUserName)) {
+        continue;
+      }
 
       const dedupeKey = conversation.conversationId || `${conversation.filePath || "unknown"}:${conversation.line ?? "null"}`;
       const existingIndex = seenKeys.get(dedupeKey);
@@ -56,11 +77,92 @@
     return results;
   }
 
+  function isLastCommentFromUser(conversation, normalizedUserName) {
+    if (!conversation || !Array.isArray(conversation.comments) || !conversation.comments.length) {
+      return false;
+    }
+
+    const lastComment = conversation.comments[conversation.comments.length - 1];
+    const author = normalizeUserName(lastComment.author || "");
+    return Boolean(author) && author === normalizedUserName;
+  }
+
+  function normalizeUserName(userName) {
+    return String(userName || "")
+      .trim()
+      .replace(/^@+/, "")
+      .toLowerCase();
+  }
+
+  function detectDefaultGitUserName() {
+    const ownerFromPrPath = getPrOwnerFromPath(window.location.pathname || "");
+    if (ownerFromPrPath) {
+      return ownerFromPrPath;
+    }
+
+    const bodyUser = valueOrNull(document.body?.getAttribute("data-signed-user-name"));
+    if (bodyUser) {
+      return bodyUser;
+    }
+
+    const metaCandidates = [
+      'meta[name="current-user"]',
+      'meta[name="current-user-name"]',
+      'meta[name="signed-user-name"]',
+      'meta[name="user-login"]',
+    ];
+    for (const selector of metaCandidates) {
+      const content = valueOrNull(document.querySelector(selector)?.getAttribute("content"));
+      if (content) {
+        return content;
+      }
+    }
+
+    const hrefCandidates = [
+      'a[href*="/user/settings"]',
+      'a[href*="/settings/profile"]',
+      '.user.link[href^="/"]',
+      'a.item[href^="/"]',
+    ];
+    for (const selector of hrefCandidates) {
+      const link = document.querySelector(selector);
+      const fromHref = extractUserNameFromHref(link?.getAttribute("href") || "");
+      if (fromHref) {
+        return fromHref;
+      }
+    }
+
+    return null;
+  }
+
+  function getPrOwnerFromPath(pathname) {
+    const match = String(pathname || "").match(/^\/([^/]+)\/[^/]+\/pulls\/\d+\/?$/i);
+    return match ? match[1] : null;
+  }
+
+  function extractUserNameFromHref(href) {
+    const clean = String(href || "").trim();
+    if (!clean.startsWith("/")) {
+      return null;
+    }
+    const firstSegment = clean.replace(/^\/+/, "").split("/")[0];
+    if (!firstSegment) {
+      return null;
+    }
+    if (/^(issues|pulls|explore|org|organizations|repo|repos|notifications|assets|api|user|admin)$/i.test(firstSegment)) {
+      return null;
+    }
+    return firstSegment;
+  }
+
   function isLikelyGiteaPrPage(locationLike, doc) {
     const path = (locationLike && locationLike.pathname) || "";
-    const giteaPath = /^\/[\w.-]+\/[\w.-]+\/pulls\/\d+(?:\/.*)?$/i.test(path);
-    const hasConversationBlocks = !!doc.querySelector(".ui.segments.conversation-holder");
-    return giteaPath || hasConversationBlocks;
+    const protocol = (locationLike && locationLike.protocol) || "";
+    const hostname = (locationLike && locationLike.hostname) || "";
+    const isHttp = protocol === "http:" || protocol === "https:";
+    const hostStartsWithGit = /^git/i.test(hostname);
+    const giteaPath = /^\/[\w.-]+\/[\w.-]+\/pulls\/\d+\/?$/i.test(path);
+    return isHttp && hostStartsWithGit && giteaPath;
   }
 
   async function expandGlobalHiddenConversationAreas() {
