@@ -170,6 +170,13 @@ h1 {
   font-size: 12px;
 }
 
+.active-filters {
+  margin: -2px 0 10px;
+  color: color-mix(in srgb, var(--muted) 82%, var(--primary) 18%);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
 .filters {
   margin-bottom: 0;
 }
@@ -179,6 +186,12 @@ h1 {
   font-size: 12px;
   font-weight: 600;
   margin-bottom: 5px;
+}
+
+.field-help {
+  margin: 6px 0 8px;
+  font-size: 11px;
+  color: var(--muted);
 }
 
 #userNameInput {

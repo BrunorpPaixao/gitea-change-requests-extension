@@ -17,9 +17,30 @@ Chrome extension (Manifest V3) to export unresolved Gitea pull request review co
    - **Ignore resolved changes** (on by default)
    - **Ignore outdated changes** (on by default)
    - **Script stats** (off by default; adds `filtersApplied` and `stats` in JSON output)
+   - **Debug** (off by default; shows the status/error panel at the bottom)
 5. Click **Test Selection** to highlight and number conversations selected by the current filters.
 6. Click **Give AI Context** to copy a ready-to-use prompt (instructions + schema v2 JSON).
 7. Click **Copy JSON** or **Download JSON**.
+
+## Popup Settings Persistence
+Popup settings are stored in `chrome.storage.local` and restored each time the popup opens:
+- Git user name
+- Ignore where last comment is from user
+- Ignore resolved changes
+- Ignore outdated changes
+- Script stats
+- Give AI Context
+- Debug
+
+Theme preference is stored separately via `localStorage` key `gitea-pr-review-exporter-theme`.
+
+## Content Script Modules
+`content.js` is organized by module responsibilities:
+- `ScrapeModule`: scrape/test flows and schema envelope creation
+- `PrContextModule`: PR metadata and source/target branch extraction
+- `HighlightModule`: in-page selection/highlight rendering
+- `SingleCopyModule`: per-conversation copy button lifecycle
+- `UserModule`: current user detection helpers
 
 ## How unresolved vs resolved is detected
 The scraper evaluates each `.ui.segments.conversation-holder` block and uses these signals:
@@ -115,3 +136,25 @@ The scraper assumes typical Gitea PR review markup:
 - Conversation controls include labels/actions such as `Resolve conversation`, `Unresolve conversation`, and `Show outdated`.
 
 It uses native DOM APIs only (no jQuery dependency), expands relevant hidden/outdated sections where possible, waits for DOM updates after clicks, and deduplicates threads by conversation id (or file/line fallback key).
+
+## Permissions and Scope
+The extension is scoped to Gitea PR pages on hosts that start with `git`:
+- Match patterns: `http://*/*/*/pulls/*` and `https://*/*/*/pulls/*`
+- Include globs: `http://git*/*/*/pulls/*` and `https://git*/*/*/pulls/*`
+
+Manifest permissions and purpose:
+- `activeTab`: interact with the currently active PR page
+- `tabs`: read active-tab URL/title for validation and filenames
+- `downloads`: support JSON/TXT file download
+- `clipboardWrite`: copy JSON/AI context to clipboard
+- `storage`: persist popup settings
+
+## CI and Local Verification
+This repository includes zero-dependency CI scripts:
+- `npm run lint`: syntax-check `popup.js` and `content.js`
+- `npm run test`: smoke checks for required popup controls and action constants
+- `npm run package-check`: verifies manifest consistency and referenced files
+- `npm run ci`: runs all checks
+
+GitHub Actions workflow:
+- `.github/workflows/ci.yml`

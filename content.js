@@ -7,9 +7,28 @@
   const SINGLE_COPY_BUTTON_CLASS = "gpre-copy-single-btn";
   const SINGLE_COPY_BASE_LABEL = "Copy";
   const SCHEMA_VERSION = "2.0";
+
+  const PrContextModule = {
+    parsePrMetaFromLocation,
+    getPrContext,
+  };
+  const HighlightModule = {
+    applySelectionHighlights,
+  };
+  const SingleCopyModule = {
+    initialize: initializeSingleConversationCopyButtons,
+  };
+  const ScrapeModule = {
+    scrapeUnresolvedConversations,
+    testSelection,
+    testHighlights,
+  };
+  const UserModule = {
+    detectDefaultGitUserName,
+  };
   console.log("[Gitea PR Review Exporter] content script started on", window.location.href);
 
-  initializeSingleConversationCopyButtons();
+  SingleCopyModule.initialize();
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (!message || !message.type) {
@@ -17,7 +36,7 @@
     }
 
     if (message.type === SCRAPE_ACTION) {
-      scrapeUnresolvedConversations(message.options || {})
+      ScrapeModule.scrapeUnresolvedConversations(message.options || {})
         .then((result) => sendResponse({ ok: true, result }))
         .catch((error) => sendResponse({ ok: false, error: error.message || String(error) }));
       return true;
@@ -25,7 +44,7 @@
 
     if (message.type === GET_DEFAULT_USER_ACTION) {
       try {
-        const username = detectDefaultGitUserName();
+        const username = UserModule.detectDefaultGitUserName();
         sendResponse({ ok: true, username });
       } catch (error) {
         sendResponse({ ok: false, error: error.message || String(error) });
@@ -35,7 +54,7 @@
 
     if (message.type === GET_PR_CONTEXT_ACTION) {
       try {
-        const context = getPrContext();
+        const context = PrContextModule.getPrContext();
         sendResponse({ ok: true, context });
       } catch (error) {
         sendResponse({ ok: false, error: error.message || String(error) });
@@ -44,14 +63,14 @@
     }
 
     if (message.type === TEST_SELECTION_ACTION) {
-      testSelection(message.options || {})
+      ScrapeModule.testSelection(message.options || {})
         .then((result) => sendResponse({ ok: true, ...result }))
         .catch((error) => sendResponse({ ok: false, error: error.message || String(error) }));
       return true;
     }
 
     if (message.type === TEST_HIGHLIGHTS_ACTION) {
-      testHighlights(message.options || {})
+      ScrapeModule.testHighlights(message.options || {})
         .then((result) => sendResponse({ ok: true, ...result }))
         .catch((error) => sendResponse({ ok: false, error: error.message || String(error) }));
       return true;
@@ -67,13 +86,13 @@
 
   async function testSelection(options) {
     const { conversations, blocks, allBlocks, stats } = await collectConversations(options);
-    applySelectionHighlights(blocks, blocks);
+    HighlightModule.applySelectionHighlights(blocks, blocks);
     return { count: conversations.length, stats };
   }
 
   async function testHighlights(options) {
     const { conversations, blocks, allBlocks, stats } = await collectConversations(options);
-    applySelectionHighlights(allBlocks, blocks);
+    HighlightModule.applySelectionHighlights(allBlocks, blocks);
     return { count: conversations.length, totalBlocks: allBlocks.length, stats };
   }
 
@@ -191,7 +210,7 @@
   }
 
   function buildSchemaV2Envelope(conversations, normalizedOptions, stats) {
-    const prMeta = parsePrMetaFromLocation(window.location);
+    const prMeta = PrContextModule.parsePrMetaFromLocation(window.location);
     const includeScriptStats = Boolean(normalizedOptions && normalizedOptions.includeScriptStats);
     const envelope = {
       schemaVersion: SCHEMA_VERSION,

@@ -3,6 +3,7 @@ const downloadBtn = document.getElementById("downloadBtn");
 const testSelectionBtn = document.getElementById("testSelectionBtn");
 const testHighlightsBtn = document.getElementById("testHighlightsBtn");
 const summaryEl = document.getElementById("summary");
+const activeFiltersEl = document.getElementById("activeFilters");
 const statusEl = document.getElementById("status");
 const errorEl = document.getElementById("error");
 const feedbackPanel = document.getElementById("feedbackPanel");
@@ -17,6 +18,16 @@ const debugCheckbox = document.getElementById("debugCheckbox");
 const themeDarkBtn = document.getElementById("themeDarkBtn");
 const themeLightBtn = document.getElementById("themeLightBtn");
 const THEME_STORAGE_KEY = "gitea-pr-review-exporter-theme";
+const POPUP_SETTINGS_STORAGE_KEY = "gitea-pr-review-exporter-popup-settings-v1";
+const DEFAULT_POPUP_SETTINGS = {
+  userName: "",
+  ignoreWhereLastCommentIsFromUser: true,
+  ignoreResolvedChanges: true,
+  ignoreOutdatedChanges: true,
+  includeScriptStats: false,
+  giveAiContext: false,
+  debug: false,
+};
 console.log("[Gitea PR Review Exporter] popup started");
 
 copyBtn.classList.add("primary");
@@ -27,15 +38,20 @@ testSelectionBtn.addEventListener("click", () => handleTestSelection());
 testHighlightsBtn.addEventListener("click", () => handleTestHighlights());
 themeDarkBtn.addEventListener("click", () => setThemePreference("dark"));
 themeLightBtn.addEventListener("click", () => setThemePreference("light"));
-debugCheckbox.addEventListener("change", () => setDebugVisible(debugCheckbox.checked));
 
-initTheme();
-ensureLastCommentFilterAtBottom();
-setDebugVisible(false);
-
-initPopup().catch((error) => {
+bootstrap().catch((error) => {
   setError(error.message || String(error));
 });
+
+async function bootstrap() {
+  initTheme();
+  ensureLastCommentFilterAtBottom();
+  await restorePopupSettings();
+  bindSettingsPersistence();
+  updateActiveFiltersSummary();
+  setDebugVisible(debugCheckbox.checked);
+  await initPopup();
+}
 
 async function initPopup() {
   const tab = await getActiveTab();
@@ -68,6 +84,7 @@ async function initPopup() {
 
     if (userResponse?.ok && userResponse.username && !userNameInput.value.trim()) {
       userNameInput.value = userResponse.username;
+      await persistPopupSettings();
       setStatus(`Detected user: ${userResponse.username}`);
     }
   } catch (_error) {
@@ -238,6 +255,7 @@ function setBusy(isBusy) {
   ignoreOutdatedCheckbox.disabled = isBusy;
   includeScriptStatsCheckbox.disabled = isBusy;
   giveAiContextCheckbox.disabled = isBusy;
+  debugCheckbox.disabled = isBusy;
 }
 
 async function runScrape() {
@@ -436,6 +454,87 @@ function setDebugVisible(isVisible) {
   const show = Boolean(isVisible);
   feedbackPanel.classList.toggle("debug-hidden", !show);
   feedbackPanel.setAttribute("aria-hidden", show ? "false" : "true");
+}
+
+function bindSettingsPersistence() {
+  const saveOnChange = async () => {
+    updateActiveFiltersSummary();
+    setDebugVisible(debugCheckbox.checked);
+    await persistPopupSettings();
+  };
+
+  userNameInput.addEventListener("input", saveOnChange);
+  ignoreLastCommentCheckbox.addEventListener("change", saveOnChange);
+  ignoreResolvedCheckbox.addEventListener("change", saveOnChange);
+  ignoreOutdatedCheckbox.addEventListener("change", saveOnChange);
+  includeScriptStatsCheckbox.addEventListener("change", saveOnChange);
+  giveAiContextCheckbox.addEventListener("change", saveOnChange);
+  debugCheckbox.addEventListener("change", saveOnChange);
+}
+
+function readPopupSettingsFromUi() {
+  return {
+    userName: userNameInput.value || "",
+    ignoreWhereLastCommentIsFromUser: ignoreLastCommentCheckbox.checked,
+    ignoreResolvedChanges: ignoreResolvedCheckbox.checked,
+    ignoreOutdatedChanges: ignoreOutdatedCheckbox.checked,
+    includeScriptStats: includeScriptStatsCheckbox.checked,
+    giveAiContext: giveAiContextCheckbox.checked,
+    debug: debugCheckbox.checked,
+  };
+}
+
+function applyPopupSettings(settings) {
+  const next = { ...DEFAULT_POPUP_SETTINGS, ...(settings || {}) };
+  userNameInput.value = next.userName || "";
+  ignoreLastCommentCheckbox.checked = Boolean(next.ignoreWhereLastCommentIsFromUser);
+  ignoreResolvedCheckbox.checked = Boolean(next.ignoreResolvedChanges);
+  ignoreOutdatedCheckbox.checked = Boolean(next.ignoreOutdatedChanges);
+  includeScriptStatsCheckbox.checked = Boolean(next.includeScriptStats);
+  giveAiContextCheckbox.checked = Boolean(next.giveAiContext);
+  debugCheckbox.checked = Boolean(next.debug);
+}
+
+async function restorePopupSettings() {
+  try {
+    const stored = await chrome.storage.local.get(POPUP_SETTINGS_STORAGE_KEY);
+    const settings = stored?.[POPUP_SETTINGS_STORAGE_KEY] || null;
+    applyPopupSettings(settings);
+  } catch (_error) {
+    applyPopupSettings(DEFAULT_POPUP_SETTINGS);
+  }
+}
+
+async function persistPopupSettings() {
+  const settings = readPopupSettingsFromUi();
+  try {
+    await chrome.storage.local.set({ [POPUP_SETTINGS_STORAGE_KEY]: settings });
+  } catch (_error) {
+    // Ignore storage errors; popup still works with in-memory state.
+  }
+}
+
+function updateActiveFiltersSummary() {
+  const active = [];
+  if (ignoreResolvedCheckbox.checked) {
+    active.push("resolved ignored");
+  }
+  if (ignoreOutdatedCheckbox.checked) {
+    active.push("outdated ignored");
+  }
+  if (ignoreLastCommentCheckbox.checked) {
+    active.push("last-comment user ignored");
+  }
+  if (includeScriptStatsCheckbox.checked) {
+    active.push("script stats");
+  }
+  if (giveAiContextCheckbox.checked) {
+    active.push("AI context");
+  }
+
+  activeFiltersEl.textContent = active.length
+    ? `Active options: ${active.join(", ")}.`
+    : "Active options: none.";
 }
 
 function parsePrMetaFromUrl(urlString) {
