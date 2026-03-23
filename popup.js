@@ -3,11 +3,41 @@ const downloadBtn = document.getElementById("downloadBtn");
 const summaryEl = document.getElementById("summary");
 const statusEl = document.getElementById("status");
 const errorEl = document.getElementById("error");
+const userNameInput = document.getElementById("userNameInput");
+const ignoreLastCommentCheckbox = document.getElementById("ignoreLastCommentCheckbox");
+console.log("[Gitea PR Review Exporter] popup started");
 
 copyBtn.classList.add("primary");
 
 copyBtn.addEventListener("click", () => handleAction("copy"));
 downloadBtn.addEventListener("click", () => handleAction("download"));
+
+initPopup().catch((error) => {
+  setError(error.message || String(error));
+});
+
+async function initPopup() {
+  const tab = await getActiveTab();
+  if (!tab || !tab.id) {
+    return;
+  }
+  if (!isLikelyGiteaPrTab(tab.url || "")) {
+    return;
+  }
+
+  try {
+    const userResponse = await chrome.tabs.sendMessage(tab.id, {
+      type: "GET_DEFAULT_GIT_USERNAME",
+    });
+
+    if (userResponse?.ok && userResponse.username && !userNameInput.value.trim()) {
+      userNameInput.value = userResponse.username;
+      setStatus(`Detected user: ${userResponse.username}`);
+    }
+  } catch (_error) {
+    // Ignore username detection errors; user can still type manually.
+  }
+}
 
 async function handleAction(action) {
   setBusy(true);
@@ -20,11 +50,15 @@ async function handleAction(action) {
       throw new Error("No active tab found.");
     }
     if (!isLikelyGiteaPrTab(tab.url || "")) {
-      throw new Error("Open a Gitea pull request files/conversation page first (for example: /OWNER/REPO/pulls/123/files).");
+      throw new Error("Open a Gitea pull request page ending with /OWNER/REPO/pulls/NUMBER on a host that starts with git.");
     }
 
     const scrapeResponse = await chrome.tabs.sendMessage(tab.id, {
       type: "SCRAPE_UNRESOLVED_CONVERSATIONS",
+      options: {
+        userName: userNameInput.value || "",
+        ignoreWhereLastCommentIsFromUser: ignoreLastCommentCheckbox.checked,
+      },
     });
 
     if (!scrapeResponse || !scrapeResponse.ok) {
@@ -66,6 +100,8 @@ async function handleAction(action) {
 function setBusy(isBusy) {
   copyBtn.disabled = isBusy;
   downloadBtn.disabled = isBusy;
+  userNameInput.disabled = isBusy;
+  ignoreLastCommentCheckbox.disabled = isBusy;
 }
 
 function setStatus(message) {
@@ -84,7 +120,10 @@ async function getActiveTab() {
 function isLikelyGiteaPrTab(urlString) {
   try {
     const url = new URL(urlString);
-    return /^\/[^/]+\/[^/]+\/pulls\/\d+(?:\/.*)?$/i.test(url.pathname);
+    const isHttp = url.protocol === "http:" || url.protocol === "https:";
+    const hostStartsWithGit = /^git/i.test(url.hostname);
+    const isPrPath = /^\/[^/]+\/[^/]+\/pulls\/\d+\/?$/i.test(url.pathname);
+    return isHttp && hostStartsWithGit && isPrPath;
   } catch (_error) {
     return false;
   }
@@ -95,7 +134,7 @@ function buildFilename(urlString, title) {
 
   try {
     const url = new URL(urlString);
-    const match = url.pathname.match(/^\/([^/]+)\/([^/]+)\/pulls\/(\d+)(?:\/.*)?$/i);
+    const match = url.pathname.match(/^\/([^/]+)\/([^/]+)\/pulls\/(\d+)\/?$/i);
     if (match) {
       const owner = sanitizePart(match[1]);
       const repo = sanitizePart(match[2]);

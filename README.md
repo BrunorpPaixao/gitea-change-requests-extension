@@ -9,9 +9,11 @@ Chrome extension (Manifest V3) to export unresolved Gitea pull request review co
 4. Select this extension folder.
 
 ## Use
-1. Open a Gitea PR files page (for example `/OWNER/REPO/pulls/123/files`).
+1. Open a Gitea PR page ending with `/OWNER/REPO/pulls/123` (host must start with `git`).
 2. Click the extension icon.
-3. Click **Copy JSON** or **Download JSON**.
+3. Review/edit **Git user name** (auto-detected from page when possible).
+4. Optional: enable **Ignore where last comment is from user**.
+5. Click **Copy JSON** or **Download JSON**.
 
 ## How unresolved vs resolved is detected
 The scraper evaluates each `.ui.segments.conversation-holder` block and uses these signals:

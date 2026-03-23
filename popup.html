@@ -8,8 +8,19 @@
   </head>
   <body>
     <main class="popup">
-      <h1>Gitea PR Review Exporter</h1>
+      <div class="title-row">
+        <img class="logo" src="icons/icon-32.png" alt="Gitea PR Review Exporter logo" />
+        <h1>Gitea PR Review Exporter</h1>
+      </div>
       <p id="summary" class="summary">No scrape run yet.</p>
+      <div class="filters">
+        <label class="field-label" for="userNameInput">Git user name</label>
+        <input id="userNameInput" type="text" placeholder="Detected from page" autocomplete="off" />
+        <label class="check-row" for="ignoreLastCommentCheckbox">
+          <input id="ignoreLastCommentCheckbox" type="checkbox" />
+          <span>Ignore where last comment is from user</span>
+        </label>
+      </div>
 
       <div class="actions">
         <button id="copyBtn" type="button">Copy JSON</button>
