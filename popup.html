@@ -9,26 +9,76 @@
   <body>
     <main class="popup">
       <div class="title-row">
-        <img class="logo" src="icons/icon-32.png" alt="Gitea PR Review Exporter logo" />
-        <h1>Gitea PR Review Exporter</h1>
+        <div class="title-wrap">
+          <img class="logo" src="icons/icon-32.png" alt="Gitea PR Review Exporter logo" />
+          <div>
+            <h1>Gitea PR Review Exporter</h1>
+            <p class="subtitle">PR conversation export helper</p>
+            <p id="headerContext" class="header-context"></p>
+          </div>
+        </div>
+        <div class="theme-switch" role="group" aria-label="Theme mode">
+          <button id="themeDarkBtn" class="theme-btn" type="button" title="Dark mode">
+            <span class="theme-icon" aria-hidden="true">
+              <svg viewBox="0 0 20 20" width="12" height="12" focusable="false">
+                <path fill="currentColor" d="M11.9 2.2a.8.8 0 0 1 .64 1.3A6.4 6.4 0 1 0 16.5 14a.8.8 0 0 1 1.23.88A8 8 0 1 1 11.1 2.25a.8.8 0 0 1 .8-.05Z"/>
+              </svg>
+            </span>
+          </button>
+          <button id="themeLightBtn" class="theme-btn" type="button" title="Light mode">
+            <span class="theme-icon" aria-hidden="true">
+              <svg viewBox="0 0 20 20" width="12" height="12" focusable="false">
+                <path fill="currentColor" d="M10 4.2a.9.9 0 0 1 .9.9v.8a.9.9 0 1 1-1.8 0V5.1a.9.9 0 0 1 .9-.9Zm0 9a.9.9 0 0 1 .9.9v.8a.9.9 0 1 1-1.8 0v-.8a.9.9 0 0 1 .9-.9Zm5.8-4.1a.9.9 0 1 1 0 1.8H15a.9.9 0 1 1 0-1.8h.8Zm-11 0a.9.9 0 1 1 0 1.8H4a.9.9 0 1 1 0-1.8h.8ZM14 6.1a.9.9 0 0 1 1.27 1.27l-.56.56a.9.9 0 1 1-1.27-1.27l.56-.56Zm-8.14 8.14a.9.9 0 0 1 1.27 1.27l-.56.56a.9.9 0 1 1-1.27-1.27l.56-.56Zm0-8.14.56.56a.9.9 0 1 1-1.27 1.27l-.56-.56a.9.9 0 1 1 1.27-1.27Zm8.14 8.14.56.56a.9.9 0 1 1-1.27 1.27l-.56-.56a.9.9 0 1 1 1.27-1.27ZM10 7a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/>
+              </svg>
+            </span>
+          </button>
+        </div>
       </div>
-      <p id="summary" class="summary">No scrape run yet.</p>
-      <div class="filters">
-        <label class="field-label" for="userNameInput">Git user name</label>
-        <input id="userNameInput" type="text" placeholder="Detected from page" autocomplete="off" />
-        <label class="check-row" for="ignoreLastCommentCheckbox">
-          <input id="ignoreLastCommentCheckbox" type="checkbox" />
-          <span>Ignore where last comment is from user</span>
-        </label>
-      </div>
+
+      <section class="panel">
+        <p id="summary" class="summary">No scrape run yet.</p>
+        <div class="filters">
+          <label class="field-label" for="userNameInput">Git user name</label>
+          <input id="userNameInput" type="text" placeholder="Detected from page" autocomplete="off" />
+          <label class="check-row" for="ignoreResolvedCheckbox" title="Exclude resolved conversations from exports and tests.">
+            <input id="ignoreResolvedCheckbox" type="checkbox" checked title="Exclude resolved conversations from exports and tests." />
+            <span>Ignore resolved changes</span>
+          </label>
+          <label class="check-row" for="ignoreOutdatedCheckbox" title="Exclude outdated conversations from exports and tests.">
+            <input id="ignoreOutdatedCheckbox" type="checkbox" checked title="Exclude outdated conversations from exports and tests." />
+            <span>Ignore outdated changes</span>
+          </label>
+          <label class="check-row" for="includeScriptStatsCheckbox" title="Include applied filters and statistics in the exported JSON.">
+            <input id="includeScriptStatsCheckbox" type="checkbox" title="Include applied filters and statistics in the exported JSON." />
+            <span>Script stats</span>
+          </label>
+          <label class="check-row" for="giveAiContextCheckbox" title="Export AI-ready instructions plus schema v2 data instead of plain JSON.">
+            <input id="giveAiContextCheckbox" type="checkbox" title="Export AI-ready instructions plus schema v2 data instead of plain JSON." />
+            <span>Give AI Context</span>
+          </label>
+          <label class="check-row" for="debugCheckbox" title="Show the bottom status/error debug area.">
+            <input id="debugCheckbox" type="checkbox" title="Show the bottom status/error debug area." />
+            <span>Debug</span>
+          </label>
+          <!-- Keep this option as the final filter row; popup.js enforces this position as a safeguard. -->
+          <label class="check-row" for="ignoreLastCommentCheckbox" data-gpre-last-filter="1" title="Exclude conversations where the most recent comment is from the selected Git user.">
+            <input id="ignoreLastCommentCheckbox" type="checkbox" checked title="Exclude conversations where the most recent comment is from the selected Git user." />
+            <span>Ignore where last comment is from user</span>
+          </label>
+        </div>
+      </section>
 
       <div class="actions">
         <button id="copyBtn" type="button">Copy JSON</button>
         <button id="downloadBtn" type="button">Download JSON</button>
+        <button id="testSelectionBtn" class="split-btn" type="button">Test Selection</button>
+        <button id="testHighlightsBtn" class="split-btn" type="button">Test Highlights</button>
       </div>
 
-      <p id="status" class="status" aria-live="polite"></p>
-      <p id="error" class="error" aria-live="polite"></p>
+      <section id="feedbackPanel" class="feedback">
+        <p id="status" class="status" aria-live="polite"></p>
+        <p id="error" class="error" aria-live="polite"></p>
+      </section>
     </main>
 
     <script src="popup.js"></script>

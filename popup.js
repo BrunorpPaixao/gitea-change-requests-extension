@@ -1,16 +1,37 @@
 const copyBtn = document.getElementById("copyBtn");
 const downloadBtn = document.getElementById("downloadBtn");
+const testSelectionBtn = document.getElementById("testSelectionBtn");
+const testHighlightsBtn = document.getElementById("testHighlightsBtn");
 const summaryEl = document.getElementById("summary");
 const statusEl = document.getElementById("status");
 const errorEl = document.getElementById("error");
+const feedbackPanel = document.getElementById("feedbackPanel");
+const headerContextEl = document.getElementById("headerContext");
 const userNameInput = document.getElementById("userNameInput");
 const ignoreLastCommentCheckbox = document.getElementById("ignoreLastCommentCheckbox");
+const ignoreResolvedCheckbox = document.getElementById("ignoreResolvedCheckbox");
+const ignoreOutdatedCheckbox = document.getElementById("ignoreOutdatedCheckbox");
+const includeScriptStatsCheckbox = document.getElementById("includeScriptStatsCheckbox");
+const giveAiContextCheckbox = document.getElementById("giveAiContextCheckbox");
+const debugCheckbox = document.getElementById("debugCheckbox");
+const themeDarkBtn = document.getElementById("themeDarkBtn");
+const themeLightBtn = document.getElementById("themeLightBtn");
+const THEME_STORAGE_KEY = "gitea-pr-review-exporter-theme";
 console.log("[Gitea PR Review Exporter] popup started");
 
 copyBtn.classList.add("primary");
 
 copyBtn.addEventListener("click", () => handleAction("copy"));
 downloadBtn.addEventListener("click", () => handleAction("download"));
+testSelectionBtn.addEventListener("click", () => handleTestSelection());
+testHighlightsBtn.addEventListener("click", () => handleTestHighlights());
+themeDarkBtn.addEventListener("click", () => setThemePreference("dark"));
+themeLightBtn.addEventListener("click", () => setThemePreference("light"));
+debugCheckbox.addEventListener("change", () => setDebugVisible(debugCheckbox.checked));
+
+initTheme();
+ensureLastCommentFilterAtBottom();
+setDebugVisible(false);
 
 initPopup().catch((error) => {
   setError(error.message || String(error));
@@ -19,10 +40,25 @@ initPopup().catch((error) => {
 async function initPopup() {
   const tab = await getActiveTab();
   if (!tab || !tab.id) {
+    setHeaderContextFromTab(null, null);
     return;
   }
+  const parsed = parsePrMetaFromUrl(tab.url || "");
+  setHeaderContextFromTab(parsed, null);
+
   if (!isLikelyGiteaPrTab(tab.url || "")) {
     return;
+  }
+
+  try {
+    const contextResponse = await chrome.tabs.sendMessage(tab.id, {
+      type: "GET_PR_CONTEXT",
+    });
+    if (contextResponse?.ok) {
+      setHeaderContextFromTab(parsed, contextResponse.context || null);
+    }
+  } catch (_error) {
+    // Ignore context detection errors; URL-based metadata is enough.
   }
 
   try {
@@ -45,39 +81,31 @@ async function handleAction(action) {
   setError("");
 
   try {
-    const tab = await getActiveTab();
-    if (!tab || !tab.id) {
-      throw new Error("No active tab found.");
-    }
-    if (!isLikelyGiteaPrTab(tab.url || "")) {
-      throw new Error("Open a Gitea pull request page ending with /OWNER/REPO/pulls/NUMBER on a host that starts with git.");
-    }
+    const { tab, exportPayload } = await runScrape();
+    const conversations = Array.isArray(exportPayload.conversations) ? exportPayload.conversations : [];
+    summaryEl.textContent = `Conversations found: ${conversations.length}`;
+    const giveAiContext = Boolean(giveAiContextCheckbox?.checked);
 
-    const scrapeResponse = await chrome.tabs.sendMessage(tab.id, {
-      type: "SCRAPE_UNRESOLVED_CONVERSATIONS",
-      options: {
-        userName: userNameInput.value || "",
-        ignoreWhereLastCommentIsFromUser: ignoreLastCommentCheckbox.checked,
-      },
-    });
-
-    if (!scrapeResponse || !scrapeResponse.ok) {
-      throw new Error(scrapeResponse?.error || "Unable to scrape this page.");
-    }
-
-    const conversations = scrapeResponse.result || [];
-    summaryEl.textContent = `Unresolved conversations found: ${conversations.length}`;
-
-    const jsonText = JSON.stringify(conversations, null, 2);
+    const outputText = giveAiContext
+      ? buildAiContextText(exportPayload)
+      : JSON.stringify(exportPayload, null, 2);
 
     if (action === "copy") {
-      await navigator.clipboard.writeText(jsonText);
-      setStatus(`Copied ${conversations.length} conversations.`);
+      await navigator.clipboard.writeText(outputText);
+      setStatus(
+        giveAiContext
+          ? `Copied AI context for ${conversations.length} conversations.`
+          : `Copied ${conversations.length} conversations.`
+      );
       return;
     }
 
-    const filename = buildFilename(tab.url || "", tab.title || "");
-    const blobUrl = URL.createObjectURL(new Blob([jsonText], { type: "application/json" }));
+    const filename = giveAiContext
+      ? buildAiContextFilename(tab.url || "", tab.title || "")
+      : buildFilename(tab.url || "", tab.title || "");
+    const blobUrl = URL.createObjectURL(
+      new Blob([outputText], { type: giveAiContext ? "text/plain;charset=utf-8" : "application/json" })
+    );
 
     try {
       await chrome.downloads.download({
@@ -85,7 +113,11 @@ async function handleAction(action) {
         filename,
         saveAs: true,
       });
-      setStatus(`Downloaded ${conversations.length} conversations.`);
+      setStatus(
+        giveAiContext
+          ? `Downloaded AI context for ${conversations.length} conversations.`
+          : `Downloaded ${conversations.length} conversations.`
+      );
     } finally {
       setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
     }
@@ -97,19 +129,218 @@ async function handleAction(action) {
   }
 }
 
+async function handleTestSelection() {
+  setBusy(true);
+  setStatus("Testing selection on page...");
+  setError("");
+
+  try {
+    const tab = await getActiveTab();
+    if (!tab || !tab.id) {
+      throw new Error("No active tab found.");
+    }
+    if (!isLikelyGiteaPrTab(tab.url || "")) {
+      throw new Error("Open a Gitea pull request page ending with /OWNER/REPO/pulls/NUMBER on a host that starts with git.");
+    }
+
+    const response = await chrome.tabs.sendMessage(tab.id, {
+      type: "TEST_SELECTION",
+      options: {
+        userName: userNameInput.value || "",
+        ignoreWhereLastCommentIsFromUser: ignoreLastCommentCheckbox.checked,
+        ignoreResolvedChanges: ignoreResolvedCheckbox.checked,
+        ignoreOutdatedChanges: ignoreOutdatedCheckbox.checked,
+      },
+    });
+
+    if (!response || !response.ok) {
+      throw new Error(response?.error || "Unable to test selection on this page.");
+    }
+
+    const count = Number(response.count || 0);
+    const stats = response.stats || null;
+    summaryEl.textContent = `Conversations found: ${count}`;
+    if (stats) {
+      const filteringHints = [];
+      if (ignoreResolvedCheckbox.checked) {
+        filteringHints.push("resolved ignored");
+      }
+      if (ignoreOutdatedCheckbox.checked) {
+        filteringHints.push("outdated ignored");
+      }
+      const hintText = filteringHints.length
+        ? ` Active filters: ${filteringHints.join(", ")}.`
+        : "";
+      setStatus(
+        `Highlighted ${count} selected/exported conversations. Skipped resolved: ${stats.skippedResolved}, outdated: ${stats.skippedOutdated}, last-comment-user: ${stats.skippedLastCommentByUser}. Last-comment-user total: ${stats.lastCommentByUserTotal} (resolved: ${stats.lastCommentByUserSkippedResolved}, outdated: ${stats.lastCommentByUserSkippedOutdated}).${hintText}`
+      );
+    } else {
+      setStatus(`Highlighted ${count} conversations on the page.`);
+    }
+  } catch (error) {
+    setStatus("");
+    setError(error.message || String(error));
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function handleTestHighlights() {
+  setBusy(true);
+  setStatus("Testing all highlights on page...");
+  setError("");
+
+  try {
+    const tab = await getActiveTab();
+    if (!tab || !tab.id) {
+      throw new Error("No active tab found.");
+    }
+    if (!isLikelyGiteaPrTab(tab.url || "")) {
+      throw new Error("Open a Gitea pull request page ending with /OWNER/REPO/pulls/NUMBER on a host that starts with git.");
+    }
+
+    const response = await chrome.tabs.sendMessage(tab.id, {
+      type: "TEST_HIGHLIGHTS",
+      options: {
+        userName: userNameInput.value || "",
+        ignoreWhereLastCommentIsFromUser: ignoreLastCommentCheckbox.checked,
+        ignoreResolvedChanges: ignoreResolvedCheckbox.checked,
+        ignoreOutdatedChanges: ignoreOutdatedCheckbox.checked,
+      },
+    });
+
+    if (!response || !response.ok) {
+      throw new Error(response?.error || "Unable to test highlights on this page.");
+    }
+
+    const selectedCount = Number(response.count || 0);
+    const totalBlocks = Number(response.totalBlocks || 0);
+    summaryEl.textContent = `Conversations found: ${selectedCount}`;
+    setStatus(
+      `Highlighted all ${totalBlocks} conversations by state. Numbered ${selectedCount} selected/exported conversations. Colors: green=unresolved/current, blue=resolved, amber=outdated, split=resolved+outdated.`
+    );
+  } catch (error) {
+    setStatus("");
+    setError(error.message || String(error));
+  } finally {
+    setBusy(false);
+  }
+}
+
 function setBusy(isBusy) {
   copyBtn.disabled = isBusy;
   downloadBtn.disabled = isBusy;
+  testSelectionBtn.disabled = isBusy;
+  testHighlightsBtn.disabled = isBusy;
   userNameInput.disabled = isBusy;
   ignoreLastCommentCheckbox.disabled = isBusy;
+  ignoreResolvedCheckbox.disabled = isBusy;
+  ignoreOutdatedCheckbox.disabled = isBusy;
+  includeScriptStatsCheckbox.disabled = isBusy;
+  giveAiContextCheckbox.disabled = isBusy;
+}
+
+async function runScrape() {
+  const tab = await getActiveTab();
+  if (!tab || !tab.id) {
+    throw new Error("No active tab found.");
+  }
+  if (!isLikelyGiteaPrTab(tab.url || "")) {
+    throw new Error("Open a Gitea pull request page ending with /OWNER/REPO/pulls/NUMBER on a host that starts with git.");
+  }
+
+  const scrapeResponse = await chrome.tabs.sendMessage(tab.id, {
+    type: "SCRAPE_UNRESOLVED_CONVERSATIONS",
+    options: {
+      userName: userNameInput.value || "",
+      ignoreWhereLastCommentIsFromUser: ignoreLastCommentCheckbox.checked,
+      ignoreResolvedChanges: ignoreResolvedCheckbox.checked,
+      ignoreOutdatedChanges: ignoreOutdatedCheckbox.checked,
+      includeScriptStats: includeScriptStatsCheckbox.checked,
+    },
+  });
+
+  if (!scrapeResponse || !scrapeResponse.ok) {
+    throw new Error(scrapeResponse?.error || "Unable to scrape this page.");
+  }
+
+  return { tab, exportPayload: scrapeResponse.result || {} };
+}
+
+function buildAiContextText(exportPayload) {
+  const prettyJson = JSON.stringify(exportPayload, null, 2);
+
+  return [
+    "# AI Task Context",
+    "",
+    "You are helping me process Gitea PR review conversations and implement requested changes.",
+    "",
+    "Instructions:",
+    "1. Analyze each conversation in `conversations` and decide the practical action needed.",
+    "2. Group output into: `completed`, `needs_changes`, and `questions`.",
+    "3. For every item in `completed`, provide an informal ready-to-post reply in `reply_for_reviewer`.",
+    "4. Keep replies short, human, and specific to that conversation.",
+    "5. If a request is ambiguous, put it in `questions` with a clear clarification question.",
+    "6. Preserve `conversationId`, `filePath`, and `line` in your output references.",
+    "",
+    "Expected output format:",
+    "{",
+    '  "completed": [',
+    '    {"conversationId":"...", "summary":"...", "reply_for_reviewer":"..."}',
+    "  ],",
+    '  "needs_changes": [',
+    '    {"conversationId":"...", "summary":"...", "proposed_change":"..."}',
+    "  ],",
+    '  "questions": [',
+    '    {"conversationId":"...", "question":"..."}',
+    "  ]",
+    "}",
+    "",
+    "Data (schema v2):",
+    "```json",
+    prettyJson,
+    "```",
+  ].join("\\n");
+}
+
+function initTheme() {
+  const saved = getThemePreference();
+  applyTheme(saved);
+}
+
+function getThemePreference() {
+  const saved = localStorage.getItem(THEME_STORAGE_KEY);
+  if (saved === "light" || saved === "dark") {
+    return saved;
+  }
+  return "dark";
+}
+
+function setThemePreference(theme) {
+  localStorage.setItem(THEME_STORAGE_KEY, theme);
+  applyTheme(theme);
+}
+
+function applyTheme(theme) {
+  const effectiveTheme = theme === "light" ? "light" : "dark";
+  document.body.classList.toggle("theme-light", effectiveTheme === "light");
+  setThemeButtonsActive(theme);
+}
+
+function setThemeButtonsActive(theme) {
+  const effectiveTheme = theme === "light" ? "light" : "dark";
+  themeDarkBtn.classList.toggle("is-active", effectiveTheme === "dark");
+  themeLightBtn.classList.toggle("is-active", effectiveTheme === "light");
 }
 
 function setStatus(message) {
-  statusEl.textContent = message || "";
+  const value = message || "";
+  statusEl.textContent = value;
 }
 
 function setError(message) {
-  errorEl.textContent = message || "";
+  const value = message || "";
+  errorEl.textContent = value;
 }
 
 async function getActiveTab() {
@@ -155,6 +386,11 @@ function buildFilename(urlString, title) {
   return `gitea-pr-unresolved-${stamp}.json`;
 }
 
+function buildAiContextFilename(urlString, title) {
+  const base = buildFilename(urlString, title).replace(/\.json$/i, "");
+  return `${base}-ai-context.txt`;
+}
+
 function sanitizePart(input) {
   return String(input || "")
     .toLowerCase()
@@ -175,4 +411,71 @@ function getTimestampLocal() {
   const min = String(d.getMinutes()).padStart(2, "0");
   const ss = String(d.getSeconds()).padStart(2, "0");
   return `${yyyy}${mm}${dd}-${hh}${min}${ss}`;
+}
+
+function ensureLastCommentFilterAtBottom() {
+  const filters = document.querySelector(".filters");
+  const lastRow = filters?.querySelector("[data-gpre-last-filter='1']");
+  if (!(filters && lastRow)) {
+    return;
+  }
+
+  const pinLast = () => {
+    const currentLast = filters.lastElementChild;
+    if (currentLast !== lastRow) {
+      filters.appendChild(lastRow);
+    }
+  };
+
+  pinLast();
+  const observer = new MutationObserver(() => pinLast());
+  observer.observe(filters, { childList: true });
+}
+
+function setDebugVisible(isVisible) {
+  const show = Boolean(isVisible);
+  feedbackPanel.classList.toggle("debug-hidden", !show);
+  feedbackPanel.setAttribute("aria-hidden", show ? "false" : "true");
+}
+
+function parsePrMetaFromUrl(urlString) {
+  try {
+    const url = new URL(urlString);
+    const match = url.pathname.match(/^\/([^/]+)\/([^/]+)\/pulls\/(\d+)\/?$/i);
+    if (!match) {
+      return null;
+    }
+    return {
+      owner: match[1],
+      repo: match[2],
+      prNumber: Number.parseInt(match[3], 10),
+    };
+  } catch (_error) {
+    return null;
+  }
+}
+
+function setHeaderContextFromTab(urlMeta, pageContext) {
+  const owner = pageContext?.owner || urlMeta?.owner || null;
+  const repo = pageContext?.repo || urlMeta?.repo || null;
+  const prNumber = pageContext?.prNumber || urlMeta?.prNumber || null;
+  const source = pageContext?.sourceBranch || null;
+  const target = pageContext?.targetBranch || null;
+
+  const parts = [];
+  if (owner && repo) {
+    parts.push(`${owner}/${repo}`);
+  }
+  if (prNumber) {
+    parts.push(`PR #${prNumber}`);
+  }
+  if (source || target) {
+    const src = source || "?";
+    const dst = target || "?";
+    parts.push(`${src} -> ${dst}`);
+  }
+
+  const value = parts.join(" • ");
+  headerContextEl.textContent = value;
+  headerContextEl.style.display = value ? "block" : "none";
 }
