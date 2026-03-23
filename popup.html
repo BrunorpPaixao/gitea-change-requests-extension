@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gitea PR Review Exporter</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="popup">
+      <h1>Gitea PR Review Exporter</h1>
+      <p id="summary" class="summary">No scrape run yet.</p>
+
+      <div class="actions">
+        <button id="copyBtn" type="button">Copy JSON</button>
+        <button id="downloadBtn" type="button">Download JSON</button>
+      </div>
+
+      <p id="status" class="status" aria-live="polite"></p>
+      <p id="error" class="error" aria-live="polite"></p>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
