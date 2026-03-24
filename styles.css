@@ -359,6 +359,13 @@ button:disabled,
   animation-delay: 170ms;
 }
 
+.diagnostics-actions {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
 .status,
 .error {
   margin: 0;

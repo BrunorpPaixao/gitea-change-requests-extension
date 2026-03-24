@@ -22,7 +22,7 @@
     {
       "matches": ["http://*/*/*/pulls/*", "https://*/*/*/pulls/*"],
       "include_globs": ["http://git*/*/*/pulls/*", "https://git*/*/*/pulls/*"],
-      "js": ["content.js"],
+      "js": ["content.js", "content-router.js"],
       "run_at": "document_idle"
     }
   ]

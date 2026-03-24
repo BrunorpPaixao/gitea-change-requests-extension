@@ -15,6 +15,10 @@ const ignoreOutdatedCheckbox = document.getElementById("ignoreOutdatedCheckbox")
 const includeScriptStatsCheckbox = document.getElementById("includeScriptStatsCheckbox");
 const giveAiContextCheckbox = document.getElementById("giveAiContextCheckbox");
 const debugCheckbox = document.getElementById("debugCheckbox");
+const verboseDiagnosticsCheckbox = document.getElementById("verboseDiagnosticsCheckbox");
+const diagnosticsActions = document.getElementById("diagnosticsActions");
+const copyDiagnosticsBtn = document.getElementById("copyDiagnosticsBtn");
+const downloadDiagnosticsBtn = document.getElementById("downloadDiagnosticsBtn");
 const themeDarkBtn = document.getElementById("themeDarkBtn");
 const themeLightBtn = document.getElementById("themeLightBtn");
 const THEME_STORAGE_KEY = "gitea-pr-review-exporter-theme";
@@ -27,6 +31,7 @@ const DEFAULT_POPUP_SETTINGS = {
   includeScriptStats: false,
   giveAiContext: false,
   debug: false,
+  verboseDiagnostics: false,
 };
 console.log("[Gitea PR Review Exporter] popup started");
 
@@ -36,6 +41,8 @@ copyBtn.addEventListener("click", () => handleAction("copy"));
 downloadBtn.addEventListener("click", () => handleAction("download"));
 testSelectionBtn.addEventListener("click", () => handleTestSelection());
 testHighlightsBtn.addEventListener("click", () => handleTestHighlights());
+copyDiagnosticsBtn.addEventListener("click", () => handleDiagnosticsAction("copy"));
+downloadDiagnosticsBtn.addEventListener("click", () => handleDiagnosticsAction("download"));
 themeDarkBtn.addEventListener("click", () => setThemePreference("dark"));
 themeLightBtn.addEventListener("click", () => setThemePreference("light"));
 
@@ -167,6 +174,7 @@ async function handleTestSelection() {
         ignoreWhereLastCommentIsFromUser: ignoreLastCommentCheckbox.checked,
         ignoreResolvedChanges: ignoreResolvedCheckbox.checked,
         ignoreOutdatedChanges: ignoreOutdatedCheckbox.checked,
+        verboseDiagnostics: verboseDiagnosticsCheckbox.checked,
       },
     });
 
@@ -223,6 +231,7 @@ async function handleTestHighlights() {
         ignoreWhereLastCommentIsFromUser: ignoreLastCommentCheckbox.checked,
         ignoreResolvedChanges: ignoreResolvedCheckbox.checked,
         ignoreOutdatedChanges: ignoreOutdatedCheckbox.checked,
+        verboseDiagnostics: verboseDiagnosticsCheckbox.checked,
       },
     });
 
@@ -244,6 +253,53 @@ async function handleTestHighlights() {
   }
 }
 
+async function handleDiagnosticsAction(action) {
+  setBusy(true);
+  setError("");
+
+  try {
+    const tab = await getActiveTab();
+    if (!tab || !tab.id) {
+      throw new Error("No active tab found.");
+    }
+    if (!isLikelyGiteaPrTab(tab.url || "")) {
+      throw new Error("Open a Gitea pull request page ending with /OWNER/REPO/pulls/NUMBER on a host that starts with git.");
+    }
+
+    const response = await chrome.tabs.sendMessage(tab.id, { type: "GET_LAST_DIAGNOSTICS" });
+    if (!response || !response.ok) {
+      throw new Error(response?.error || "No diagnostics available yet. Run a scrape or test first.");
+    }
+
+    const payload = response.result || {};
+    const text = JSON.stringify(payload, null, 2);
+    if (action === "copy") {
+      await navigator.clipboard.writeText(text);
+      setStatus("Copied diagnostics JSON.");
+      return;
+    }
+
+    const filenameBase = buildFilename(tab.url || "", tab.title || "").replace(/\\.json$/i, "");
+    const filename = `${filenameBase}-diagnostics.json`;
+    const blobUrl = URL.createObjectURL(new Blob([text], { type: "application/json;charset=utf-8" }));
+    try {
+      await chrome.downloads.download({
+        url: blobUrl,
+        filename,
+        saveAs: true,
+      });
+      setStatus("Downloaded diagnostics JSON.");
+    } finally {
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+    }
+  } catch (error) {
+    setStatus("");
+    setError(error.message || String(error));
+  } finally {
+    setBusy(false);
+  }
+}
+
 function setBusy(isBusy) {
   copyBtn.disabled = isBusy;
   downloadBtn.disabled = isBusy;
@@ -256,6 +312,9 @@ function setBusy(isBusy) {
   includeScriptStatsCheckbox.disabled = isBusy;
   giveAiContextCheckbox.disabled = isBusy;
   debugCheckbox.disabled = isBusy;
+  verboseDiagnosticsCheckbox.disabled = isBusy;
+  copyDiagnosticsBtn.disabled = isBusy;
+  downloadDiagnosticsBtn.disabled = isBusy;
 }
 
 async function runScrape() {
@@ -275,6 +334,7 @@ async function runScrape() {
       ignoreResolvedChanges: ignoreResolvedCheckbox.checked,
       ignoreOutdatedChanges: ignoreOutdatedCheckbox.checked,
       includeScriptStats: includeScriptStatsCheckbox.checked,
+      verboseDiagnostics: verboseDiagnosticsCheckbox.checked,
     },
   });
 
@@ -454,6 +514,8 @@ function setDebugVisible(isVisible) {
   const show = Boolean(isVisible);
   feedbackPanel.classList.toggle("debug-hidden", !show);
   feedbackPanel.setAttribute("aria-hidden", show ? "false" : "true");
+  diagnosticsActions.classList.toggle("debug-hidden", !show);
+  diagnosticsActions.setAttribute("aria-hidden", show ? "false" : "true");
 }
 
 function bindSettingsPersistence() {
@@ -470,6 +532,7 @@ function bindSettingsPersistence() {
   includeScriptStatsCheckbox.addEventListener("change", saveOnChange);
   giveAiContextCheckbox.addEventListener("change", saveOnChange);
   debugCheckbox.addEventListener("change", saveOnChange);
+  verboseDiagnosticsCheckbox.addEventListener("change", saveOnChange);
 }
 
 function readPopupSettingsFromUi() {
@@ -481,6 +544,7 @@ function readPopupSettingsFromUi() {
     includeScriptStats: includeScriptStatsCheckbox.checked,
     giveAiContext: giveAiContextCheckbox.checked,
     debug: debugCheckbox.checked,
+    verboseDiagnostics: verboseDiagnosticsCheckbox.checked,
   };
 }
 
@@ -493,6 +557,7 @@ function applyPopupSettings(settings) {
   includeScriptStatsCheckbox.checked = Boolean(next.includeScriptStats);
   giveAiContextCheckbox.checked = Boolean(next.giveAiContext);
   debugCheckbox.checked = Boolean(next.debug);
+  verboseDiagnosticsCheckbox.checked = Boolean(next.verboseDiagnostics);
 }
 
 async function restorePopupSettings() {
@@ -530,6 +595,9 @@ function updateActiveFiltersSummary() {
   }
   if (giveAiContextCheckbox.checked) {
     active.push("AI context");
+  }
+  if (verboseDiagnosticsCheckbox.checked) {
+    active.push("verbose diagnostics");
   }
 
   activeFiltersEl.textContent = active.length

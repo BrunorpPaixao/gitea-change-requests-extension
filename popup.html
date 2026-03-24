@@ -62,6 +62,10 @@
             <input id="debugCheckbox" type="checkbox" title="Show the bottom status/error debug area." />
             <span>Debug</span>
           </label>
+          <label class="check-row" for="verboseDiagnosticsCheckbox" title="Collect detailed per-thread diagnostics and performance data.">
+            <input id="verboseDiagnosticsCheckbox" type="checkbox" title="Collect detailed per-thread diagnostics and performance data." />
+            <span>Verbose diagnostics</span>
+          </label>
           <!-- Keep this option as the final filter row; popup.js enforces this position as a safeguard. -->
           <label class="check-row" for="ignoreLastCommentCheckbox" data-gpre-last-filter="1" title="Exclude conversations where the most recent comment is from the selected Git user.">
             <input id="ignoreLastCommentCheckbox" type="checkbox" checked title="Exclude conversations where the most recent comment is from the selected Git user." />
@@ -81,6 +85,11 @@
         <p id="status" class="status" aria-live="polite"></p>
         <p id="error" class="error" aria-live="polite"></p>
       </section>
+
+      <div id="diagnosticsActions" class="diagnostics-actions debug-hidden">
+        <button id="copyDiagnosticsBtn" type="button" title="Copy the latest diagnostics payload as JSON.">Copy Diagnostics</button>
+        <button id="downloadDiagnosticsBtn" type="button" title="Download the latest diagnostics payload as JSON.">Download Diagnostics</button>
+      </div>
     </main>
 
     <script src="popup.js"></script>
