@@ -2,6 +2,7 @@
   const SCRAPE_ACTION = "SCRAPE_UNRESOLVED_CONVERSATIONS";
   const GET_DEFAULT_USER_ACTION = "GET_DEFAULT_GIT_USERNAME";
   const GET_PR_CONTEXT_ACTION = "GET_PR_CONTEXT";
+  const GET_LAST_DIAGNOSTICS_ACTION = "GET_LAST_DIAGNOSTICS";
   const TEST_SELECTION_ACTION = "TEST_SELECTION";
   const TEST_HIGHLIGHTS_ACTION = "TEST_HIGHLIGHTS";
   const SINGLE_COPY_BUTTON_CLASS = "gpre-copy-single-btn";
@@ -26,72 +27,45 @@
   const UserModule = {
     detectDefaultGitUserName,
   };
-  console.log("[Gitea PR Review Exporter] content script started on", window.location.href);
-
-  SingleCopyModule.initialize();
-
-  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (!message || !message.type) {
-      return;
-    }
-
-    if (message.type === SCRAPE_ACTION) {
-      ScrapeModule.scrapeUnresolvedConversations(message.options || {})
-        .then((result) => sendResponse({ ok: true, result }))
-        .catch((error) => sendResponse({ ok: false, error: error.message || String(error) }));
-      return true;
-    }
-
-    if (message.type === GET_DEFAULT_USER_ACTION) {
-      try {
-        const username = UserModule.detectDefaultGitUserName();
-        sendResponse({ ok: true, username });
-      } catch (error) {
-        sendResponse({ ok: false, error: error.message || String(error) });
-      }
-      return;
-    }
-
-    if (message.type === GET_PR_CONTEXT_ACTION) {
-      try {
-        const context = PrContextModule.getPrContext();
-        sendResponse({ ok: true, context });
-      } catch (error) {
-        sendResponse({ ok: false, error: error.message || String(error) });
-      }
-      return;
-    }
-
-    if (message.type === TEST_SELECTION_ACTION) {
-      ScrapeModule.testSelection(message.options || {})
-        .then((result) => sendResponse({ ok: true, ...result }))
-        .catch((error) => sendResponse({ ok: false, error: error.message || String(error) }));
-      return true;
-    }
-
-    if (message.type === TEST_HIGHLIGHTS_ACTION) {
-      ScrapeModule.testHighlights(message.options || {})
-        .then((result) => sendResponse({ ok: true, ...result }))
-        .catch((error) => sendResponse({ ok: false, error: error.message || String(error) }));
-      return true;
-    }
-
-    return;
-  });
+  let lastDiagnostics = null;
 
   async function scrapeUnresolvedConversations(options) {
-    const { conversations, stats, normalizedOptions } = await collectConversations(options);
+    const { conversations, stats, normalizedOptions, diagnostics } = await collectConversations(options);
+    lastDiagnostics = diagnostics;
     return buildSchemaV2Envelope(conversations, normalizedOptions, stats);
   }
 
+  globalThis.GPREContentCore = {
+    constants: {
+      SCRAPE_ACTION,
+      GET_DEFAULT_USER_ACTION,
+      GET_PR_CONTEXT_ACTION,
+      GET_LAST_DIAGNOSTICS_ACTION,
+      TEST_SELECTION_ACTION,
+      TEST_HIGHLIGHTS_ACTION,
+    },
+    initialize: () => {
+      console.log("[Gitea PR Review Exporter] content script started on", window.location.href);
+      SingleCopyModule.initialize();
+    },
+    getDefaultUser: () => UserModule.detectDefaultGitUserName(),
+    getPrContext: () => PrContextModule.getPrContext(),
+    getLastDiagnostics: () => lastDiagnostics,
+    scrape: (options) => ScrapeModule.scrapeUnresolvedConversations(options),
+    testSelection: (options) => ScrapeModule.testSelection(options),
+    testHighlights: (options) => ScrapeModule.testHighlights(options),
+  };
+
   async function testSelection(options) {
-    const { conversations, blocks, allBlocks, stats } = await collectConversations(options);
+    const { conversations, blocks, allBlocks, stats, diagnostics } = await collectConversations(options);
+    lastDiagnostics = diagnostics;
     HighlightModule.applySelectionHighlights(blocks, blocks);
     return { count: conversations.length, stats };
   }
 
   async function testHighlights(options) {
-    const { conversations, blocks, allBlocks, stats } = await collectConversations(options);
+    const { conversations, blocks, allBlocks, stats, diagnostics } = await collectConversations(options);
+    lastDiagnostics = diagnostics;
     HighlightModule.applySelectionHighlights(allBlocks, blocks);
     return { count: conversations.length, totalBlocks: allBlocks.length, stats };
   }
@@ -101,6 +75,7 @@
       throw new Error("This tab does not look like a Gitea pull request files/conversation page.");
     }
 
+    const startedAt = Date.now();
     const normalizedUserName = normalizeUserName(options.userName || "");
     const ignoreWhereLastCommentIsFromUser = Boolean(options.ignoreWhereLastCommentIsFromUser);
     const ignoreResolvedChanges =
@@ -108,35 +83,50 @@
     const ignoreOutdatedChanges =
       options.ignoreOutdatedChanges === undefined ? true : Boolean(options.ignoreOutdatedChanges);
     const includeScriptStats = Boolean(options.includeScriptStats);
+    const verboseDiagnostics = Boolean(options.verboseDiagnostics);
     const normalizedOptions = {
       userName: normalizedUserName || null,
       ignoreWhereLastCommentIsFromUser,
       ignoreResolvedChanges,
       ignoreOutdatedChanges,
       includeScriptStats,
+      verboseDiagnostics,
     };
+    const diagnosticsDecisions = [];
+    const maxDiagnosticsDecisions = 120;
 
     await expandGlobalHiddenConversationAreas();
 
     const blocks = Array.from(document.querySelectorAll(".ui.segments.conversation-holder"));
     if (!blocks.length) {
+      const emptyRuntimeMs = Date.now() - startedAt;
+      const emptyStats = {
+        totalBlocks: 0,
+        included: 0,
+        skippedResolved: 0,
+        skippedOutdated: 0,
+        skippedLastCommentByUser: 0,
+        lastCommentByUserTotal: 0,
+        lastCommentByUserSkippedResolved: 0,
+        lastCommentByUserSkippedOutdated: 0,
+        skippedNoConversationData: 0,
+        deduped: 0,
+        runtimeMs: emptyRuntimeMs,
+      };
       return {
         conversations: [],
         blocks: [],
         allBlocks: [],
-        stats: {
-          totalBlocks: 0,
-          included: 0,
-          skippedResolved: 0,
-          skippedOutdated: 0,
-          skippedLastCommentByUser: 0,
-          lastCommentByUserTotal: 0,
-          lastCommentByUserSkippedResolved: 0,
-          lastCommentByUserSkippedOutdated: 0,
-          skippedNoConversationData: 0,
-          deduped: 0,
-        },
+        stats: emptyStats,
         normalizedOptions,
+        diagnostics: buildDiagnosticsPayload({
+          mode: "collect",
+          normalizedOptions,
+          stats: emptyStats,
+          decisions: diagnosticsDecisions,
+          warning: null,
+          startedAt,
+        }),
       };
     }
 
@@ -155,6 +145,7 @@
       skippedNoConversationData: 0,
       deduped: 0,
     };
+    const runtimeWarningThresholdMs = 2500;
 
     for (const block of blocks) {
       const lastAuthor = normalizeUserName(getLastCommentAuthorFromBlock(block) || "");
@@ -169,6 +160,13 @@
           stats.lastCommentByUserSkippedResolved += 1;
         }
         stats.skippedResolved += 1;
+        if (verboseDiagnostics && diagnosticsDecisions.length < maxDiagnosticsDecisions) {
+          diagnosticsDecisions.push({
+            decision: "skipped_resolved",
+            resolution,
+            lastCommentByUser,
+          });
+        }
         continue;
       }
 
@@ -176,6 +174,12 @@
       const conversation = extractConversation(block);
       if (!conversation) {
         stats.skippedNoConversationData += 1;
+        if (verboseDiagnostics && diagnosticsDecisions.length < maxDiagnosticsDecisions) {
+          diagnosticsDecisions.push({
+            decision: "skipped_no_data",
+            resolution,
+          });
+        }
         continue;
       }
       conversation.resolved = resolution === "resolved";
@@ -185,10 +189,26 @@
           stats.lastCommentByUserSkippedOutdated += 1;
         }
         stats.skippedOutdated += 1;
+        if (verboseDiagnostics && diagnosticsDecisions.length < maxDiagnosticsDecisions) {
+          diagnosticsDecisions.push({
+            decision: "skipped_outdated",
+            conversationId: conversation.conversationId || null,
+            line: conversation.line,
+            filePath: conversation.filePath || null,
+          });
+        }
         continue;
       }
       if (ignoreWhereLastCommentIsFromUser && normalizedUserName && isLastCommentFromUser(block, conversation, normalizedUserName)) {
         stats.skippedLastCommentByUser += 1;
+        if (verboseDiagnostics && diagnosticsDecisions.length < maxDiagnosticsDecisions) {
+          diagnosticsDecisions.push({
+            decision: "skipped_last_comment_user",
+            conversationId: conversation.conversationId || null,
+            line: conversation.line,
+            filePath: conversation.filePath || null,
+          });
+        }
         continue;
       }
 
@@ -199,14 +219,69 @@
         results.push(conversation);
         selectedBlocks.push(block);
         stats.included += 1;
+        if (verboseDiagnostics && diagnosticsDecisions.length < maxDiagnosticsDecisions) {
+          diagnosticsDecisions.push({
+            decision: "included",
+            conversationId: conversation.conversationId || null,
+            line: conversation.line,
+            filePath: conversation.filePath || null,
+          });
+        }
       } else if (results[existingIndex].comments.length < conversation.comments.length) {
         results[existingIndex] = conversation;
         selectedBlocks[existingIndex] = block;
         stats.deduped += 1;
+        if (verboseDiagnostics && diagnosticsDecisions.length < maxDiagnosticsDecisions) {
+          diagnosticsDecisions.push({
+            decision: "deduped_replaced",
+            conversationId: conversation.conversationId || null,
+            line: conversation.line,
+            filePath: conversation.filePath || null,
+          });
+        }
       }
     }
 
-    return { conversations: results, blocks: selectedBlocks, allBlocks: blocks, stats, normalizedOptions };
+    stats.runtimeMs = Date.now() - startedAt;
+    const warning = stats.runtimeMs > runtimeWarningThresholdMs
+      ? `Scrape runtime ${stats.runtimeMs}ms exceeded ${runtimeWarningThresholdMs}ms threshold.`
+      : null;
+    return {
+      conversations: results,
+      blocks: selectedBlocks,
+      allBlocks: blocks,
+      stats,
+      normalizedOptions,
+      diagnostics: buildDiagnosticsPayload({
+        mode: "collect",
+        normalizedOptions,
+        stats,
+        decisions: diagnosticsDecisions,
+        warning,
+        startedAt,
+      }),
+    };
+  }
+
+  function buildDiagnosticsPayload({ mode, normalizedOptions, stats, decisions, warning, startedAt }) {
+    return {
+      mode: mode || "collect",
+      generatedAt: new Date().toISOString(),
+      startedAt: new Date(startedAt || Date.now()).toISOString(),
+      warning: warning || null,
+      options: normalizedOptions || {},
+      metrics: {
+        runtimeMs: Number(stats?.runtimeMs || 0),
+        totalBlocks: Number(stats?.totalBlocks || 0),
+        included: Number(stats?.included || 0),
+        skippedResolved: Number(stats?.skippedResolved || 0),
+        skippedOutdated: Number(stats?.skippedOutdated || 0),
+        skippedLastCommentByUser: Number(stats?.skippedLastCommentByUser || 0),
+        skippedNoConversationData: Number(stats?.skippedNoConversationData || 0),
+        deduped: Number(stats?.deduped || 0),
+      },
+      decisions: Array.isArray(decisions) ? decisions : [],
+    };
   }
 
   function buildSchemaV2Envelope(conversations, normalizedOptions, stats) {

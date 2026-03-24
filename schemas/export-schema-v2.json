@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/export-schema-v2.json",
+  "title": "Gitea PR Review Export Envelope v2",
+  "type": "object",
+  "required": ["schemaVersion", "source", "conversations"],
+  "properties": {
+    "schemaVersion": { "const": "2.0" },
+    "source": {
+      "type": "object",
+      "required": ["url", "host", "title", "owner", "repo", "prNumber", "scrapedAt"],
+      "properties": {
+        "url": { "type": "string" },
+        "host": { "type": "string" },
+        "title": { "type": ["string", "null"] },
+        "owner": { "type": ["string", "null"] },
+        "repo": { "type": ["string", "null"] },
+        "prNumber": { "type": ["integer", "null"] },
+        "scrapedAt": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "conversations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "conversationId",
+          "filePath",
+          "line",
+          "outdated",
+          "hunkHeader",
+          "threadUrl",
+          "rootComment",
+          "comments",
+          "resolved",
+          "commentCount"
+        ],
+        "properties": {
+          "conversationId": { "type": ["string", "null"] },
+          "filePath": { "type": ["string", "null"] },
+          "line": { "type": ["integer", "null"] },
+          "outdated": { "type": "boolean" },
+          "hunkHeader": { "type": ["string", "null"] },
+          "threadUrl": { "type": ["string", "null"] },
+          "rootComment": {
+            "type": "object",
+            "required": ["id", "author", "datetime", "text"],
+            "properties": {
+              "id": { "type": ["string", "null"] },
+              "author": { "type": ["string", "null"] },
+              "datetime": { "type": ["string", "null"] },
+              "text": { "type": "string" }
+            },
+            "additionalProperties": true
+          },
+          "comments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "author", "datetime", "text"],
+              "properties": {
+                "id": { "type": ["string", "null"] },
+                "author": { "type": ["string", "null"] },
+                "datetime": { "type": ["string", "null"] },
+                "text": { "type": "string" }
+              },
+              "additionalProperties": true
+            }
+          },
+          "resolved": { "type": "boolean" },
+          "commentCount": { "type": "integer" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "filtersApplied": { "type": "object" },
+    "stats": { "type": "object" }
+  },
+  "additionalProperties": true
+}

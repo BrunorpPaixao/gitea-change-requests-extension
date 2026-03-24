@@ -18,9 +18,11 @@ Chrome extension (Manifest V3) to export unresolved Gitea pull request review co
    - **Ignore outdated changes** (on by default)
    - **Script stats** (off by default; adds `filtersApplied` and `stats` in JSON output)
    - **Debug** (off by default; shows the status/error panel at the bottom)
+   - **Verbose diagnostics** (off by default; captures detailed skip decisions and performance metrics)
 5. Click **Test Selection** to highlight and number conversations selected by the current filters.
 6. Click **Give AI Context** to copy a ready-to-use prompt (instructions + schema v2 JSON).
 7. Click **Copy JSON** or **Download JSON**.
+8. In Debug mode, use **Copy Diagnostics** / **Download Diagnostics** after a run to inspect parser decisions.
 
 ## Popup Settings Persistence
 Popup settings are stored in `chrome.storage.local` and restored each time the popup opens:
@@ -31,11 +33,27 @@ Popup settings are stored in `chrome.storage.local` and restored each time the p
 - Script stats
 - Give AI Context
 - Debug
+- Verbose diagnostics
 
 Theme preference is stored separately via `localStorage` key `gitea-pr-review-exporter-theme`.
 
+## Diagnostics
+After any scrape/test run, diagnostics are available through popup debug actions:
+- `Copy Diagnostics`: copies the latest diagnostics payload JSON
+- `Download Diagnostics`: downloads diagnostics as `*-diagnostics.json`
+
+Diagnostics payload includes:
+- scrape runtime (`runtimeMs`)
+- inclusion/skip counters
+- optional per-thread decision samples (when verbose diagnostics is enabled)
+- warning when runtime exceeds guardrail threshold
+
 ## Content Script Modules
-`content.js` is organized by module responsibilities:
+Content script is split into core + router files:
+- `content.js`: scraper/core implementation with internal module facades
+- `content-router.js`: message routing and bootstrap wiring
+
+Inside `content.js`, responsibilities are organized by facades:
 - `ScrapeModule`: scrape/test flows and schema envelope creation
 - `PrContextModule`: PR metadata and source/target branch extraction
 - `HighlightModule`: in-page selection/highlight rendering
@@ -154,7 +172,16 @@ This repository includes zero-dependency CI scripts:
 - `npm run lint`: syntax-check `popup.js` and `content.js`
 - `npm run test`: smoke checks for required popup controls and action constants
 - `npm run package-check`: verifies manifest consistency and referenced files
+- `npm run release:package`: builds extension zip in `dist/`
 - `npm run ci`: runs all checks
 
 GitHub Actions workflow:
 - `.github/workflows/ci.yml`
+
+## Versioning and Release Baseline
+- Follow semantic versioning (`MAJOR.MINOR.PATCH`).
+- Update `CHANGELOG.md` for user-facing changes.
+- Before release:
+  1. Run `npm run ci`
+  2. Run `npm run release:package`
+  3. Load packaged build in `chrome://extensions` and smoke-test core flows.

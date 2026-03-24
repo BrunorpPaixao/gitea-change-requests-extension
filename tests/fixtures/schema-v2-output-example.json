@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "2.0",
+  "source": {
+    "url": "https://git.example.com/example-org/example-repo/pulls/987",
+    "host": "git.example.com",
+    "title": "#987 - Improve notification listener - example-repo - Git",
+    "owner": "example-org",
+    "repo": "example-repo",
+    "prNumber": 987,
+    "scrapedAt": "2026-03-23T19:40:12.000Z"
+  },
+  "conversations": [
+    {
+      "conversationId": "123456",
+      "filePath": "backend/service/src/main/java/com/example/app/NotificationService.java",
+      "line": 87,
+      "outdated": false,
+      "hunkHeader": "@@ -80,4 +87,9 @@ public class NotificationService {",
+      "threadUrl": "https://git.example.com/example-org/example-repo/pulls/987/files#issuecomment-123456",
+      "rootComment": {
+        "id": "123456",
+        "author": "reviewer_a",
+        "datetime": "2026-03-22T12:14:51.000Z",
+        "text": "Can this duplicate guard be moved into a shared method?"
+      },
+      "comments": [
+        {
+          "id": "123456",
+          "author": "reviewer_a",
+          "datetime": "2026-03-22T12:14:51.000Z",
+          "text": "Can this duplicate guard be moved into a shared method?"
+        },
+        {
+          "id": "123499",
+          "author": "author_b",
+          "datetime": "2026-03-22T13:04:10.000Z",
+          "text": "Yes, moved to NotificationUtils and updated call sites."
+        }
+      ],
+      "resolved": false,
+      "commentCount": 2
+    }
+  ]
+}

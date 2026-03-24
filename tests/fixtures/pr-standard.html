@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+  <head><title>#42 - Feature - sample-repo - Git</title></head>
+  <body data-signed-user-name="alice">
+    <span id="pull-desc-display">
+      wants to merge from
+      <code><a href="https://git.example.com/acme/sample-repo/src/branch/feature/test-branch">feature/test-branch</a></code>
+      into
+      <code id="branch_target"><a href="https://git.example.com/acme/sample-repo/src/branch/main">main</a></code>
+    </span>
+
+    <div class="ui segments conversation-holder" id="conv-1">
+      <input name="path" value="src/main.js" />
+      <input name="line" value="12" />
+      <a class="file-comment" href="/acme/sample-repo/pulls/42/files#issuecomment-1001">src/main.js</a>
+      <button data-action="Resolve" data-comment-id="1001">Resolve conversation</button>
+      <div class="timeline-item comment" id="comment-1001" data-comment-id="1001">
+        <a class="author" href="/bob">bob</a>
+        <time datetime="2026-03-01T10:00:00.000Z"></time>
+        <div class="render-content">Please rename this variable</div>
+      </div>
+      <div class="timeline-item comment" id="comment-1002" data-comment-id="1002">
+        <a class="author" href="/alice">alice</a>
+        <time datetime="2026-03-01T10:05:00.000Z"></time>
+        <div class="render-content">Done in latest commit</div>
+      </div>
+    </div>
+
+    <div class="ui segments conversation-holder" id="conv-2">
+      <input name="path" value="src/legacy.js" />
+      <input name="line" value="44" />
+      <a class="file-comment" href="/acme/sample-repo/pulls/42/files#issuecomment-2001">src/legacy.js</a>
+      <button data-action="UnResolve" data-comment-id="2001">Unresolve conversation</button>
+      <div class="timeline-item comment" id="comment-2001" data-comment-id="2001">
+        <a class="author" href="/reviewer">reviewer</a>
+        <time datetime="2026-03-01T09:00:00.000Z"></time>
+        <div class="render-content">Legacy issue still open</div>
+      </div>
+      <span class="ui label">Outdated</span>
+    </div>
+  </body>
+</html>

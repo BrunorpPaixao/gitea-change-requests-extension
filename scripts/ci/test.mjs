@@ -12,8 +12,12 @@ const requiredPopupIds = [
   "giveAiContextCheckbox",
   "ignoreLastCommentCheckbox",
   "debugCheckbox",
+  "verboseDiagnosticsCheckbox",
   "activeFilters",
   "feedbackPanel",
+  "diagnosticsActions",
+  "copyDiagnosticsBtn",
+  "downloadDiagnosticsBtn",
 ];
 
 for (const id of requiredPopupIds) {
@@ -28,6 +32,7 @@ const requiredContentActions = [
   "SCRAPE_UNRESOLVED_CONVERSATIONS",
   "GET_DEFAULT_GIT_USERNAME",
   "GET_PR_CONTEXT",
+  "GET_LAST_DIAGNOSTICS",
   "TEST_SELECTION",
   "TEST_HIGHLIGHTS",
 ];
