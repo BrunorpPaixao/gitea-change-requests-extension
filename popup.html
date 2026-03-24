@@ -37,7 +37,6 @@
 
       <section class="panel">
         <p id="summary" class="summary">No scrape run yet.</p>
-        <p id="activeFilters" class="active-filters"></p>
         <div class="filters">
           <label class="field-label" for="userNameInput">Git user name</label>
           <input id="userNameInput" type="text" placeholder="Detected from page" autocomplete="off" />
@@ -75,10 +74,52 @@
       </section>
 
       <div class="actions">
-        <button id="copyBtn" type="button">Copy JSON</button>
-        <button id="downloadBtn" type="button">Download JSON</button>
-        <button id="testSelectionBtn" class="split-btn" type="button">Test Selection</button>
-        <button id="testHighlightsBtn" class="split-btn" type="button">Test Highlights</button>
+        <button id="copyBtn" class="copy-top-btn icon-btn" type="button">
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 20 20" width="12" height="12" focusable="false">
+              <path fill="currentColor" d="M6 2.8A2.2 2.2 0 0 0 3.8 5v8A2.2 2.2 0 0 0 6 15.2h1.1v.4A2.4 2.4 0 0 0 9.5 18h5a2.4 2.4 0 0 0 2.4-2.4v-7a2.4 2.4 0 0 0-2.4-2.4h-5A2.4 2.4 0 0 0 7.1 8.6v4.8H6a.4.4 0 0 1-.4-.4V5c0-.22.18-.4.4-.4h5c.22 0 .4.18.4.4v.4h1.8V5a2.2 2.2 0 0 0-2.2-2.2H6Zm3.5 5.2h5c.33 0 .6.27.6.6v7a.6.6 0 0 1-.6.6h-5a.6.6 0 0 1-.6-.6v-7c0-.33.27-.6.6-.6Z"/>
+            </svg>
+          </span>
+          <span>Copy JSON</span>
+        </button>
+
+        <section
+          id="downloadBundleWrapper"
+          class="download-bundle-wrapper"
+          role="button"
+          tabindex="0"
+          aria-label="Download JSON and diff in one ZIP file"
+          title="Download JSON and diff together in one ZIP"
+        >
+          <div class="download-bundle-head">
+            <p class="download-bundle-title">Download Bundle (ZIP)</p>
+            <span id="downloadBundleState" class="download-bundle-state" aria-live="polite">Ready</span>
+          </div>
+          <p class="download-bundle-subtitle">Click this card to download one ZIP with both files.</p>
+          <div class="download-buttons">
+            <button id="downloadBtn" class="icon-btn" type="button">
+              <span class="btn-icon" aria-hidden="true">
+                <svg viewBox="0 0 20 20" width="12" height="12" focusable="false">
+                  <path fill="currentColor" d="M10 2.6a.9.9 0 0 1 .9.9v6.14l1.84-1.84a.9.9 0 0 1 1.27 1.27l-3.4 3.4a.9.9 0 0 1-1.27 0l-3.4-3.4A.9.9 0 0 1 7.2 7.8l1.9 1.9V3.5a.9.9 0 0 1 .9-.9Zm-5 10.1a.9.9 0 0 1 .9.9v1c0 .33.27.6.6.6h7a.6.6 0 0 0 .6-.6v-1a.9.9 0 1 1 1.8 0v1a2.4 2.4 0 0 1-2.4 2.4h-7a2.4 2.4 0 0 1-2.4-2.4v-1a.9.9 0 0 1 .9-.9Z"/>
+                </svg>
+              </span>
+              <span>Download JSON</span>
+            </button>
+            <button id="downloadDiffBtn" class="icon-btn" type="button">
+              <span class="btn-icon" aria-hidden="true">
+                <svg viewBox="0 0 20 20" width="12" height="12" focusable="false">
+                  <path fill="currentColor" d="M4.8 2.8A2.2 2.2 0 0 0 2.6 5v10A2.2 2.2 0 0 0 4.8 17.2h10.4a2.2 2.2 0 0 0 2.2-2.2V7.6a.9.9 0 0 0-.26-.64l-3.7-3.7A.9.9 0 0 0 12.8 3H4.8Zm8.4 1.99 2.21 2.21H13.2V4.79ZM9.1 8.9a.9.9 0 1 1 1.8 0v1.2h1.2a.9.9 0 1 1 0 1.8h-1.2v1.2a.9.9 0 1 1-1.8 0v-1.2H7.9a.9.9 0 1 1 0-1.8h1.2V8.9Z"/>
+                </svg>
+              </span>
+              <span>Download Diff</span>
+            </button>
+          </div>
+        </section>
+
+        <div class="test-actions">
+          <button id="testSelectionBtn" class="split-btn" type="button">Test Selection</button>
+          <button id="testHighlightsBtn" class="split-btn" type="button">Test Highlights</button>
+        </div>
       </div>
 
       <section id="feedbackPanel" class="feedback">
@@ -87,8 +128,22 @@
       </section>
 
       <div id="diagnosticsActions" class="diagnostics-actions debug-hidden">
-        <button id="copyDiagnosticsBtn" type="button" title="Copy the latest diagnostics payload as JSON.">Copy Diagnostics</button>
-        <button id="downloadDiagnosticsBtn" type="button" title="Download the latest diagnostics payload as JSON.">Download Diagnostics</button>
+        <button id="copyDiagnosticsBtn" class="icon-btn" type="button" title="Copy the latest diagnostics payload as JSON.">
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 20 20" width="12" height="12" focusable="false">
+              <path fill="currentColor" d="M6 2.8A2.2 2.2 0 0 0 3.8 5v8A2.2 2.2 0 0 0 6 15.2h1.1v.4A2.4 2.4 0 0 0 9.5 18h5a2.4 2.4 0 0 0 2.4-2.4v-7a2.4 2.4 0 0 0-2.4-2.4h-5A2.4 2.4 0 0 0 7.1 8.6v4.8H6a.4.4 0 0 1-.4-.4V5c0-.22.18-.4.4-.4h5c.22 0 .4.18.4.4v.4h1.8V5a2.2 2.2 0 0 0-2.2-2.2H6Zm3.5 5.2h5c.33 0 .6.27.6.6v7a.6.6 0 0 1-.6.6h-5a.6.6 0 0 1-.6-.6v-7c0-.33.27-.6.6-.6Z"/>
+            </svg>
+          </span>
+          <span>Copy Diagnostics</span>
+        </button>
+        <button id="downloadDiagnosticsBtn" class="icon-btn" type="button" title="Download the latest diagnostics payload as JSON.">
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 20 20" width="12" height="12" focusable="false">
+              <path fill="currentColor" d="M10 2.6a.9.9 0 0 1 .9.9v6.14l1.84-1.84a.9.9 0 0 1 1.27 1.27l-3.4 3.4a.9.9 0 0 1-1.27 0l-3.4-3.4A.9.9 0 0 1 7.2 7.8l1.9 1.9V3.5a.9.9 0 0 1 .9-.9Zm-5 10.1a.9.9 0 0 1 .9.9v1c0 .33.27.6.6.6h7a.6.6 0 0 0 .6-.6v-1a.9.9 0 1 1 1.8 0v1a2.4 2.4 0 0 1-2.4 2.4h-7a2.4 2.4 0 0 1-2.4-2.4v-1a.9.9 0 0 1 .9-.9Z"/>
+            </svg>
+          </span>
+          <span>Download Diagnostics</span>
+        </button>
       </div>
     </main>
 

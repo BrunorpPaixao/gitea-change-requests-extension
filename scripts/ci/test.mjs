@@ -13,11 +13,12 @@ const requiredPopupIds = [
   "ignoreLastCommentCheckbox",
   "debugCheckbox",
   "verboseDiagnosticsCheckbox",
-  "activeFilters",
   "feedbackPanel",
   "diagnosticsActions",
   "copyDiagnosticsBtn",
   "downloadDiagnosticsBtn",
+  "downloadDiffBtn",
+  "downloadBundleWrapper",
 ];
 
 for (const id of requiredPopupIds) {
