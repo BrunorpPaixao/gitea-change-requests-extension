@@ -1,3 +1,7 @@
+/**
+ * Compatibility matrix test.
+ * Verifies core message APIs keep working across multiple fixture variants.
+ */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

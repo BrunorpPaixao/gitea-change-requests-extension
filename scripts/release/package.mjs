@@ -1,3 +1,7 @@
+/**
+ * Release packaging script.
+ * Builds the distributable ZIP containing extension runtime assets.
+ */
 import { mkdirSync, existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { basename, resolve } from "node:path";
@@ -13,11 +17,9 @@ if (existsSync(outFile)) {
 
 const include = [
   "manifest.json",
-  "popup.html",
-  "popup.js",
+  "popup",
   "styles.css",
-  "content.js",
-  "content-router.js",
+  "content",
   "icons",
 ];
 

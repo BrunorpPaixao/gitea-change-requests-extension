@@ -1,3 +1,7 @@
+/**
+ * Parser fixture test.
+ * Exercises scrape/filter behavior on representative PR HTML fixtures.
+ */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

@@ -48,12 +48,22 @@ Diagnostics payload includes:
 - optional per-thread decision samples (when verbose diagnostics is enabled)
 - warning when runtime exceeds guardrail threshold
 
-## Content Script Modules
-Content script is split into core + router files:
-- `content.js`: scraper/core implementation with internal module facades
-- `content-router.js`: message routing and bootstrap wiring
+## Runtime Script Layout
+Popup logic is split into focused files under `popup/`:
+- `popup/popup.html`: popup markup entrypoint referenced by the manifest
+- `popup/state.js`: shared DOM refs, constants, and required element checks
+- `popup/ui.js`: visual state, status/error updates, and interaction micro-feedback
+- `popup/system.js`: tab/runtime messaging, URL/file helpers, theme/settings persistence
+- `popup/core.js`: feature workflows for scrape/export/test/diagnostics/download
+- `popup/main.js`: startup wiring and event binding
 
-Inside `content.js`, responsibilities are organized by facades:
+Content script is split into core + router files:
+- `content/content.js`: content runtime registry and exported API wiring
+- `content/scrape-core.js`: scrape/test pipeline and schema envelope logic
+- `content/helpers.js`: context parsing, highlighting, single-copy UI, extraction helpers, and utilities
+- `content/content-router.js`: message routing and bootstrap wiring
+
+Inside the content runtime, responsibilities are organized by facades:
 - `ScrapeModule`: scrape/test flows and schema envelope creation
 - `PrContextModule`: PR metadata and source/target branch extraction
 - `HighlightModule`: in-page selection/highlight rendering
@@ -169,7 +179,7 @@ Manifest permissions and purpose:
 
 ## CI and Local Verification
 This repository includes zero-dependency CI scripts:
-- `npm run lint`: syntax-check `popup.js` and `content.js`
+- `npm run lint`: syntax-check popup/content runtime scripts
 - `npm run test`: smoke checks for required popup controls and action constants
 - `npm run package-check`: verifies manifest consistency and referenced files
 - `npm run release:package`: builds extension zip in `dist/`

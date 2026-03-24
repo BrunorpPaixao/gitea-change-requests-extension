@@ -1,8 +1,12 @@
+/**
+ * CI smoke-test script.
+ * Validates required popup DOM ids and expected content-script action symbols.
+ */
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
-const popupHtml = readFileSync("popup.html", "utf8");
-const contentJs = readFileSync("content.js", "utf8");
+const popupHtml = readFileSync("popup/popup.html", "utf8");
+const contentJs = readFileSync("content/content.js", "utf8");
 
 const requiredPopupIds = [
   "userNameInput",
@@ -25,7 +29,7 @@ for (const id of requiredPopupIds) {
   assert.match(
     popupHtml,
     new RegExp(`id="${id}"`),
-    `popup.html is missing required element id="${id}"`
+    `popup/popup.html is missing required element id="${id}"`
   );
 }
 
@@ -42,7 +46,7 @@ for (const action of requiredContentActions) {
   assert.match(
     contentJs,
     new RegExp(action),
-    `content.js is missing expected action constant "${action}"`
+    `content/content.js is missing expected action constant "${action}"`
   );
 }
 

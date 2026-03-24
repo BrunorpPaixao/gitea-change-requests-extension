@@ -1,10 +1,17 @@
+/**
+ * Test harness helper.
+ * Boots content scripts in JSDOM and provides a message-based helper for integration-style tests.
+ */
 import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
 
-const CONTENT_CORE_PATH = new URL("../../content.js", import.meta.url);
-const CONTENT_ROUTER_PATH = new URL("../../content-router.js", import.meta.url);
-const CONTENT_CORE_TEXT = readFileSync(CONTENT_CORE_PATH, "utf8");
-const CONTENT_ROUTER_TEXT = readFileSync(CONTENT_ROUTER_PATH, "utf8");
+const MANIFEST_PATH = new URL("../../manifest.json", import.meta.url);
+const manifest = JSON.parse(readFileSync(MANIFEST_PATH, "utf8"));
+const contentScriptFiles = manifest?.content_scripts?.[0]?.js || [];
+const contentScriptTexts = contentScriptFiles.map((filePath) => {
+  const fileUrl = new URL(`../../${filePath}`, import.meta.url);
+  return readFileSync(fileUrl, "utf8");
+});
 
 export function createContentHarness({ html, url }) {
   const dom = new JSDOM(html, {
@@ -24,8 +31,9 @@ export function createContentHarness({ html, url }) {
     },
   };
 
-  dom.window.eval(CONTENT_CORE_TEXT);
-  dom.window.eval(CONTENT_ROUTER_TEXT);
+  for (const scriptText of contentScriptTexts) {
+    dom.window.eval(scriptText);
+  }
 
   if (!listeners.length) {
     throw new Error("content script did not register a message listener");

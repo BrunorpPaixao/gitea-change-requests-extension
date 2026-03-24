@@ -13,10 +13,37 @@ Primary goals:
 ## Runtime Architecture
 - `manifest.json`
   - MV3 extension config, popup entrypoint, content script registration, icons
-- `popup.html`, `popup.js`, `styles.css`
-  - Extension UI, filter controls, theme controls, export/test actions
-- `content.js`
-  - Page-side logic: scraping, filter evaluation, expansion, highlighting, single-thread copy
+- `popup/popup.html`, `styles.css`, `popup/`
+  - Popup UI and modular popup runtime (`state`, `ui`, `system`, `core`, `main`)
+- `content/content.js`, `content/`, `content/content-router.js`
+  - Modular content runtime (core registry, scrape engine, helper/features, router)
+
+### Modularity And Feature Isolation
+Treat `popup/main.js` and `content/content.js` as entrypoints, not long-term implementation buckets.
+
+Rules:
+- Keep entry files thin: only bootstrap, message wiring, and top-level orchestration.
+- Isolate each feature into its own module/file (for example: scraping, filters, export, diagnostics, thread quick actions, theme handling, storage).
+- When a feature has more than one concern (logic + UI bindings + helpers), use a feature folder.
+- Prefer colocating feature-specific helpers/tests with that feature instead of adding global utility files by default.
+- Share code only when used by 2+ features and the abstraction is stable.
+
+Preferred structure (evolve incrementally, no big-bang rewrite required):
+- `src/popup/`
+  - `index.js` (entrypoint)
+  - `features/filters/`
+  - `features/export/`
+  - `features/theme/`
+- `src/content/`
+  - `index.js` (entrypoint)
+  - `features/scrape/`
+  - `features/highlight/`
+  - `features/single-thread-copy/`
+- `src/shared/`
+  - stable cross-context modules only (message contracts, pure utils, schema helpers)
+
+Refactor trigger:
+- If a file grows beyond ~300-400 lines, or a section becomes hard to test in isolation, split by feature boundary before adding more behavior.
 
 Message flow:
 - Popup -> Content Script
@@ -108,6 +135,8 @@ Both popup checks and content checks enforce this.
 - Prefer robust selector fallbacks for Gitea variants.
 - Keep filter behavior explicit and observable in `Test Selection` stats.
 - When adding UI controls, wire popup -> message options -> content behavior end-to-end.
+- Prefer feature-folder organization for new work; avoid adding unrelated logic to existing large files.
+- Keep modules single-purpose and named by behavior (`collectThreads`, `applyFilters`, `exportJson`, `renderStatus`) rather than generic names like `utils2`.
 
 ## Design Context
 

@@ -1,3 +1,7 @@
+/**
+ * CI package-check script.
+ * Verifies manifest basics and confirms referenced files/icons/content scripts exist.
+ */
 import { existsSync, readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
