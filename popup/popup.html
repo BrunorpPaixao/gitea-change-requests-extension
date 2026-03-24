@@ -4,13 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gitea PR Review Exporter</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="../styles.css" />
   </head>
   <body>
     <main class="popup">
       <div class="title-row">
         <div class="title-wrap">
-          <img class="logo" src="icons/icon-32.png" alt="Gitea PR Review Exporter logo" />
+          <img class="logo" src="../icons/icon-32.png" alt="Gitea PR Review Exporter logo" />
           <div>
             <h1>Gitea PR Review Exporter</h1>
             <p class="subtitle">PR conversation export helper</p>
@@ -65,7 +65,7 @@
             <input id="verboseDiagnosticsCheckbox" type="checkbox" title="Collect detailed per-thread diagnostics and performance data." />
             <span>Verbose diagnostics</span>
           </label>
-          <!-- Keep this option as the final filter row; popup.js enforces this position as a safeguard. -->
+          <!-- Keep this option as the final filter row; popup/system.js enforces this position as a safeguard. -->
           <label class="check-row" for="ignoreLastCommentCheckbox" data-gpre-last-filter="1" title="Exclude conversations where the most recent comment is from the selected Git user.">
             <input id="ignoreLastCommentCheckbox" type="checkbox" checked title="Exclude conversations where the most recent comment is from the selected Git user." />
             <span>Ignore where last comment is from user</span>
@@ -147,6 +147,10 @@
       </div>
     </main>
 
-    <script src="popup.js"></script>
+    <script src="state.js"></script>
+    <script src="ui.js"></script>
+    <script src="system.js"></script>
+    <script src="core.js"></script>
+    <script src="main.js"></script>
   </body>
 </html>

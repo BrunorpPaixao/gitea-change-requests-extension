@@ -1,3 +1,7 @@
+/**
+ * Content router script.
+ * Binds chrome runtime messages to the exported content core actions and returns structured responses.
+ */
 (() => {
   const core = globalThis.GPREContentCore;
   if (!core) {

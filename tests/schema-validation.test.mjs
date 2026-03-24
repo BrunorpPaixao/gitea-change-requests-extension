@@ -1,3 +1,7 @@
+/**
+ * Schema fixture validation test.
+ * Ensures example JSON fixture matches the exported v2 schema contract.
+ */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
