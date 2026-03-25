@@ -10,7 +10,7 @@ var TEST_SELECTION_ACTION = "TEST_SELECTION";
 var TEST_HIGHLIGHTS_ACTION = "TEST_HIGHLIGHTS";
 var SINGLE_COPY_BUTTON_CLASS = "gpre-copy-single-btn";
 var SINGLE_COPY_BASE_LABEL = "Copy";
-var SCHEMA_VERSION = "2.0";
+var SCHEMA_VERSION = "2.1-factual";
 
 var PrContextModule = {
   parsePrMetaFromLocation: (...args) => parsePrMetaFromLocation(...args),

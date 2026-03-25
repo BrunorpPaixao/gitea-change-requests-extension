@@ -1,0 +1,177 @@
+{
+  "schemaVersion": "2.1-factual",
+  "scope": {
+    "type": "pull_request"
+  },
+  "source": {
+    "host": "git.example.com",
+    "owner": "example-org",
+    "prNumber": 987,
+    "repo": "example-repo",
+    "scrapedAt": "2026-03-23T19:40:12.000Z",
+    "title": "#987 - Improve notification listener - example-repo - Git",
+    "url": "https://git.example.com/example-org/example-repo/pulls/987"
+  },
+  "actors": {
+    "currentUser": {
+      "username": "author_b"
+    },
+    "prAuthor": {
+      "username": null
+    }
+  },
+  "identityResolution": {
+    "currentUserKnown": true,
+    "prAuthorKnown": false
+  },
+  "participants": {
+    "commentAuthors": [
+      "reviewer_a",
+      "author_b"
+    ],
+    "pageParticipants": [
+      "author_b",
+      "reviewer_a"
+    ],
+    "reviewers": [
+      "reviewer_a"
+    ]
+  },
+  "exportOptions": {
+    "debug": false,
+    "gitUserName": "author_b",
+    "ignoreLastCommentByUser": false,
+    "ignoreOutdated": true,
+    "ignoreResolved": true,
+    "scriptStats": false,
+    "verboseDiagnostics": false
+  },
+  "completeness": {
+    "allThreadsLoaded": true,
+    "hiddenThreadsExpanded": true,
+    "outdatedSectionsExpanded": true,
+    "parseWarnings": []
+  },
+  "ordering": {
+    "comments": "chronological_ascending_with_dom_stable_fallback",
+    "conversations": "page_dom_order"
+  },
+  "counts": {
+    "commentDatetimeMissingCount": 0,
+    "conversationCount": 1,
+    "lastCommentByOtherUserCount": 0,
+    "outdatedCount": 0,
+    "resolvedCount": 0,
+    "unresolvedCount": 1
+  },
+  "views": {
+    "allConversationIds": [
+      "123456"
+    ],
+    "byFile": {
+      "backend/service/src/main/java/com/example/app/NotificationService.java": [
+        "123456"
+      ]
+    },
+    "lastCommentByCurrentUser": [
+      "123456"
+    ],
+    "lastCommentByOtherUser": [],
+    "notOutdated": [
+      "123456"
+    ],
+    "outdated": [],
+    "resolved": [],
+    "unresolved": [
+      "123456"
+    ],
+    "unresolvedLastCommentByOtherUser": [],
+    "unresolvedLastCommentByOtherUserNewestFirst": []
+  },
+  "conversations": [
+    {
+      "conversationId": "123456",
+      "filePath": "backend/service/src/main/java/com/example/app/NotificationService.java",
+      "threadUrl": "https://git.example.com/example-org/example-repo/pulls/987/files#issuecomment-123456",
+      "resolved": false,
+      "outdated": false,
+      "selectionReason": "included_by_default",
+      "lineNew": 87,
+      "lineOld": null,
+      "diffSide": "new",
+      "hunkHeader": "@@ -80,4 +87,9 @@ public class NotificationService {",
+      "codeContext": {
+        "hunkHeader": "@@ -80,4 +87,9 @@ public class NotificationService {",
+        "lines": [
+          {
+            "type": "same",
+            "oldLine": 84,
+            "newLine": 84,
+            "marker": " ",
+            "text": "if (user != null && user.isActive()) {"
+          },
+          {
+            "type": "same",
+            "oldLine": 85,
+            "newLine": 85,
+            "marker": " ",
+            "text": "  boolean shouldNotify = ...;"
+          },
+          {
+            "type": "del",
+            "oldLine": 87,
+            "newLine": null,
+            "marker": "-",
+            "text": "  sendNotification(user);"
+          },
+          {
+            "type": "add",
+            "oldLine": null,
+            "newLine": 87,
+            "marker": "+",
+            "text": "  sendNotification(user, context);"
+          },
+          {
+            "type": "same",
+            "oldLine": 88,
+            "newLine": 88,
+            "marker": " ",
+            "text": "}"
+          }
+        ]
+      },
+      "rootComment": {
+        "author": "reviewer_a",
+        "datetime": "2026-03-22T12:14:51.000Z",
+        "id": "123456",
+        "text": "Can this duplicate guard be moved into a shared method?"
+      },
+      "comments": [
+        {
+          "author": "author_b",
+          "datetime": "2026-03-22T13:04:10.000Z",
+          "id": "123499",
+          "text": "Yes, moved to NotificationUtils and updated call sites."
+        }
+      ],
+      "commentIdsInOrder": [
+        "123456",
+        "123499"
+      ],
+      "commentAuthorsInOrder": [
+        "reviewer_a",
+        "author_b"
+      ],
+      "commentCount": 2,
+      "hasReplies": true,
+      "lastCommentId": "123499",
+      "lastCommentAuthor": "author_b",
+      "lastCommentAuthorIsCurrentUser": true,
+      "lastCommentAuthorIsPrAuthor": null,
+      "lastCommentAt": "2026-03-22T13:04:10.000Z",
+      "lastCommentUrl": "https://git.example.com/example-org/example-repo/pulls/987/files#issuecomment-123499",
+      "lastCommentByOtherUser": false
+    }
+  ],
+  "exportFingerprint": "fnv1a:3f249aa1"
+}

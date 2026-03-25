@@ -14,6 +14,53 @@
       <input name="line" value="12" />
       <a class="file-comment" href="/acme/sample-repo/pulls/42/files#issuecomment-1001">src/main.js</a>
       <button data-action="Resolve" data-comment-id="1001">Resolve conversation</button>
+      <table>
+        <tr data-line-type="tag">
+          <td class="lines-num" colspan="2"></td>
+          <td class="lines-escape"></td>
+          <td class="lines-type-marker"><span data-type-marker=""></span></td>
+          <td class="lines-code blob-hunk"><code class="code-inner">@@ -10,4 +10,4 @@</code></td>
+        </tr>
+        <tr data-line-type="same">
+          <td class="lines-num lines-num-old" data-line-num="10"></td>
+          <td class="lines-num lines-num-new" data-line-num="10"></td>
+          <td class="lines-escape"></td>
+          <td class="lines-type-marker"><span data-type-marker=" "></span></td>
+          <td class="lines-code"><code class="code-inner">const a = 1;</code></td>
+        </tr>
+        <tr data-line-type="same">
+          <td class="lines-num lines-num-old" data-line-num="11"></td>
+          <td class="lines-num lines-num-new" data-line-num="11"></td>
+          <td class="lines-escape"></td>
+          <td class="lines-type-marker"><span data-type-marker=" "></span></td>
+          <td class="lines-code"><code class="code-inner">const b = 2;</code></td>
+        </tr>
+        <tr data-line-type="del">
+          <td class="lines-num lines-num-old" data-line-num="12"></td>
+          <td class="lines-num lines-num-new" data-line-num=""></td>
+          <td class="lines-escape"></td>
+          <td class="lines-type-marker"><span data-type-marker="-"></span></td>
+          <td class="lines-code lines-code-old">
+            <code class="code-inner"><span class="removed-code">const variable_name = a + b;</span></code>
+          </td>
+        </tr>
+        <tr data-line-type="add">
+          <td class="lines-num lines-num-old" data-line-num=""></td>
+          <td class="lines-num lines-num-new" data-line-num="12"></td>
+          <td class="lines-escape"></td>
+          <td class="lines-type-marker"><span data-type-marker="+"></span></td>
+          <td class="lines-code">
+            <code class="code-inner"><span class="added-code">const sum = a + b;</span></code>
+          </td>
+        </tr>
+        <tr data-line-type="same">
+          <td class="lines-num lines-num-old" data-line-num="13"></td>
+          <td class="lines-num lines-num-new" data-line-num="13"></td>
+          <td class="lines-escape"></td>
+          <td class="lines-type-marker"><span data-type-marker=" "></span></td>
+          <td class="lines-code"><code class="code-inner">console.log(sum);</code></td>
+        </tr>
+      </table>
       <div class="timeline-item comment" id="comment-1001" data-comment-id="1001">
         <a class="author" href="/bob">bob</a>
         <time datetime="2026-03-01T10:00:00.000Z"></time>

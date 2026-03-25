@@ -2,6 +2,43 @@
 
 Chrome extension (Manifest V3) to export unresolved Gitea pull request review conversations from PR files/conversation pages into JSON.
 
+## Branch Update Summary (2026-03-25)
+This branch refines the exporter contract to be stricter, leaner, and factual-only.
+
+### What Changed
+- Export scope is explicit:
+  - full PR export sets `"scope": { "type": "pull_request" }`
+  - single-conversation export sets `"scope": { "type": "single_conversation" }`
+- Identity model is explicit:
+  - `actors` is the source of truth (`currentUser`, `prAuthor`)
+  - `identityResolution` indicates whether those identities are known
+- Participant output is normalized:
+  - `participants.reviewers`
+  - `participants.pageParticipants`
+  - `participants.commentAuthors`
+- Conversation payload is leaner:
+  - canonical location fields are `lineNew`, `lineOld`, `diffSide`
+  - no comment-level identity booleans
+  - no semantic/workflow inference fields
+- URL fields are now direct and actionable:
+  - `threadUrl` is absolute
+  - `lastCommentUrl` is absolute and anchored to the last comment
+- Deterministic workflow helpers expanded:
+  - `views.unresolvedLastCommentByOtherUserNewestFirst`
+  - `views.byFile`
+  - `commentIdsInOrder` / `commentAuthorsInOrder`
+- `selectionReason` is stable and documented:
+  - `included_by_default`
+  - `included_resolved`
+  - `included_outdated`
+  - `included_last_comment_by_current_user`
+
+### Diff Grounding
+- `codeContext` is extracted only from visible diff table rows on the PR page.
+- It is conversation-level only.
+- It uses factual hunk/row data (`hunkHeader`, `lines[]` with `type`, `oldLine`, `newLine`, `marker`, `text`).
+- It is omitted when matching/extraction is not confident.
+
 ## Install (Unpacked)
 1. Open `chrome://extensions`.
 2. Enable **Developer mode**.
@@ -20,7 +57,7 @@ Chrome extension (Manifest V3) to export unresolved Gitea pull request review co
    - **Debug** (off by default; shows the status/error panel at the bottom)
    - **Verbose diagnostics** (off by default; captures detailed skip decisions and performance metrics)
 5. Click **Test Selection** to highlight and number conversations selected by the current filters.
-6. Click **Give AI Context** to copy a ready-to-use prompt (instructions + schema v2 JSON).
+6. Click **Give AI Context** to copy a ready-to-use prompt (instructions + schema v2.1-factual JSON).
 7. Click **Copy JSON** or **Download JSON**.
 8. In Debug mode, use **Copy Diagnostics** / **Download Diagnostics** after a run to inspect parser decisions.
 
@@ -36,6 +73,11 @@ Popup settings are stored in `chrome.storage.local` and restored each time the p
 - Verbose diagnostics
 
 Theme preference is stored separately via `localStorage` key `gitea-pr-review-exporter-theme`.
+
+Single-conversation copy (`Copy` button on a thread) resolves `actors.currentUser.username` in this order:
+1. Popup settings value from `chrome.storage.local` (`gitea-pr-review-exporter-popup-settings-v2.userName`) when non-empty.
+2. Page/header detection (`detectDefaultGitUserName`, same resolver used by the full PR flow default user lookup).
+3. `null` when still unavailable.
 
 ## Diagnostics
 After any scrape/test run, diagnostics are available through popup debug actions:
@@ -77,75 +119,188 @@ The scraper evaluates each `.ui.segments.conversation-holder` block and uses the
 - **Resolved** when the block text contains `marked this conversation as resolved`.
 - Export selection follows the active filter checkboxes (resolved/outdated/user-last-comment).
 
-## Output JSON Structure (Anonymized Example)
-The extension exports a schema v2 envelope (`schemaVersion: "2.0"`).
+## Output JSON Structure (Current Schema, Anonymized Example)
+The extension exports a factual-only schema v2.1-factual envelope (`schemaVersion: "2.1-factual"`).
 By default, `filtersApplied` and `stats` are omitted unless **Script stats** is enabled.
 
 ```json
 {
-  "schemaVersion": "2.0",
+  "schemaVersion": "2.1-factual",
+  "scope": {
+    "type": "pull_request"
+  },
   "source": {
-    "url": "https://git.example.com/example-org/example-repo/pulls/987",
     "host": "git.example.com",
-    "title": "#987 - Improve notification listener - example-repo - Git",
     "owner": "example-org",
-    "repo": "example-repo",
     "prNumber": 987,
-    "scrapedAt": "2026-03-23T19:40:12.000Z"
+    "repo": "example-repo",
+    "scrapedAt": "2026-03-23T19:40:12.000Z",
+    "title": "#987 - Improve notification listener - example-repo - Git",
+    "url": "https://git.example.com/example-org/example-repo/pulls/987"
+  },
+  "actors": {
+    "currentUser": { "username": "author_b" },
+    "prAuthor": { "username": null }
+  },
+  "identityResolution": {
+    "currentUserKnown": true,
+    "prAuthorKnown": false
+  },
+  "participants": {
+    "commentAuthors": ["reviewer_a", "author_b"],
+    "pageParticipants": ["author_b", "reviewer_a"],
+    "reviewers": ["reviewer_a"]
+  },
+  "exportOptions": {
+    "debug": false,
+    "gitUserName": "author_b",
+    "ignoreLastCommentByUser": false,
+    "ignoreOutdated": true,
+    "ignoreResolved": true,
+    "scriptStats": false,
+    "verboseDiagnostics": false
+  },
+  "completeness": {
+    "allThreadsLoaded": true,
+    "hiddenThreadsExpanded": true,
+    "outdatedSectionsExpanded": true,
+    "parseWarnings": []
+  },
+  "ordering": {
+    "comments": "chronological_ascending_with_dom_stable_fallback",
+    "conversations": "page_dom_order"
+  },
+  "counts": {
+    "commentDatetimeMissingCount": 0,
+    "conversationCount": 1,
+    "lastCommentByOtherUserCount": 0,
+    "outdatedCount": 0,
+    "resolvedCount": 0,
+    "unresolvedCount": 1
+  },
+  "views": {
+    "allConversationIds": ["123456"],
+    "byFile": {
+      "backend/service/src/main/java/com/example/app/SampleService.java": ["123456"]
+    },
+    "lastCommentByCurrentUser": ["123456"],
+    "lastCommentByOtherUser": [],
+    "notOutdated": ["123456"],
+    "outdated": [],
+    "resolved": [],
+    "unresolved": ["123456"],
+    "unresolvedLastCommentByOtherUser": [],
+    "unresolvedLastCommentByOtherUserNewestFirst": []
   },
   "conversations": [
     {
       "conversationId": "123456",
       "filePath": "backend/service/src/main/java/com/example/app/SampleService.java",
-      "line": 87,
-      "outdated": false,
-      "hunkHeader": "@@ -80,4 +87,9 @@ public class SampleService {",
       "threadUrl": "https://git.example.com/example-org/example-repo/pulls/987/files#issuecomment-123456",
+      "resolved": false,
+      "outdated": false,
+      "selectionReason": "included_by_default",
+      "lineNew": 87,
+      "lineOld": null,
+      "diffSide": "new",
+      "hunkHeader": "@@ -80,4 +87,9 @@ public class SampleService {",
+      "codeContext": {
+        "hunkHeader": "@@ -80,4 +87,9 @@ public class SampleService {",
+        "lines": [
+          { "type": "same", "oldLine": 84, "newLine": 84, "marker": " ", "text": "if (user != null && user.isActive()) {" },
+          { "type": "del", "oldLine": 87, "newLine": null, "marker": "-", "text": "  sendNotification(user);" },
+          { "type": "add", "oldLine": null, "newLine": 87, "marker": "+", "text": "  sendNotification(user, context);" },
+          { "type": "same", "oldLine": 88, "newLine": 88, "marker": " ", "text": "}" }
+        ]
+      },
       "rootComment": {
-        "id": "123456",
         "author": "reviewer_a",
         "datetime": "2026-03-20T13:52:11.000Z",
+        "id": "123456",
         "text": "Can we simplify this condition?"
       },
       "comments": [
         {
-          "id": "123456",
-          "author": "reviewer_a",
-          "datetime": "2026-03-20T13:52:11.000Z",
-          "text": "Can we simplify this condition?"
-        },
-        {
-          "id": "123789",
           "author": "author_b",
           "datetime": "2026-03-21T09:14:55.000Z",
+          "id": "123789",
           "text": "Yes, updated in the latest commit."
         }
       ],
-      "resolved": false,
-      "commentCount": 2
+      "commentIdsInOrder": ["123456", "123789"],
+      "commentAuthorsInOrder": ["reviewer_a", "author_b"],
+      "commentCount": 2,
+      "hasReplies": true,
+      "lastCommentId": "123789",
+      "lastCommentAuthor": "author_b",
+      "lastCommentAuthorIsCurrentUser": true,
+      "lastCommentAuthorIsPrAuthor": null,
+      "lastCommentAt": "2026-03-21T09:14:55.000Z",
+      "lastCommentUrl": "https://git.example.com/example-org/example-repo/pulls/987/files#issuecomment-123789",
+      "lastCommentByOtherUser": false
     }
-  ]
+  ],
+  "exportFingerprint": "fnv1a:..."
 }
 ```
 
 ### Top-Level Field Meanings
 - `schemaVersion`: Output contract version.
 - `source`: Page metadata at scrape time.
+- `scope`: explicit export origin (`pull_request` or `single_conversation`).
+- `actors`: factual user identities known at scrape time.
+- `identityResolution`: explicit identity reliability flags for downstream consumers.
+- `participants`: factual participant sets scraped from page sections and comment authors.
+  `pageParticipants` comes from the PR sidebar section whose heading matches `participants` (DOM heading text match). It only means “listed in that page section”; it does not imply reviewer or comment-author semantics.
+- `exportOptions`: Effective export filters/options, always included.
+- `completeness`: Export coverage and parse-warning indicators.
+- `ordering`: deterministic ordering contract used by this export.
+- `counts`: deterministic factual counters derived from exported conversations.
+- `exportFingerprint`: Stable fingerprint for incremental agent workflows.
 - `conversations`: Exported thread objects.
+- `views`: deterministic pre-filtered conversation-id arrays.
+  Includes `unresolvedLastCommentByOtherUserNewestFirst` and `byFile`.
 - `filtersApplied`: Included only when **Script stats** is enabled.
 - `stats`: Included only when **Script stats** is enabled.
+
+### Property Ordering Contract
+- Top-level export object order: `schemaVersion`, `scope`, `source`, `actors`, `identityResolution`, `participants`, `exportOptions`, `completeness`, `ordering`, `counts`, `views`, `conversations`, then additional optional top-level fields.
+- Conversation object order: `conversationId`, `filePath`, `threadUrl`, `resolved`, `outdated`, `selectionReason`, `lineNew`, `lineOld`, `diffSide`, `hunkHeader`, `codeContext`, `rootComment`, `comments`, `commentIdsInOrder`, `commentAuthorsInOrder`, `commentCount`, `hasReplies`, `lastCommentId`, `lastCommentAuthor`, `lastCommentAuthorIsCurrentUser`, `lastCommentAuthorIsPrAuthor`, `lastCommentAt`, `lastCommentUrl`, `lastCommentByOtherUser`, then additional optional fields.
+- Comment objects (`rootComment`, `comments[]`) are key-sorted alphabetically.
+- `codeContext` object order is `hunkHeader`, then `lines`; each line entry order is `type`, `oldLine`, `newLine`, `marker`, `text`.
 
 ### Conversation Field Meanings
 - `conversationId`: Thread identifier (normalized when possible).
 - `filePath`: Repository path of the commented file.
-- `line`: Target line number when available; otherwise `null`.
+- `lineNew` / `lineOld` / `diffSide`: additive location hints for agent processing.
+- `codeContext`: optional factual diff context from visible table rows (`hunkHeader` + bounded `lines[]`); omitted when unavailable.
 - `outdated`: `true` when Gitea marks thread as outdated.
 - `hunkHeader`: Diff hunk header text when detected.
 - `threadUrl`: Direct URL anchor to that thread.
+- `lastCommentUrl`: Absolute URL anchored to the last comment in the thread.
+- `threadKey`: present only when needed as fallback key (for example when `conversationId` is unavailable).
 - `rootComment`: First comment in the thread.
-- `comments`: Follow-up comments only (root comment excluded), ordered by datetime (ascending), with stable fallback ordering.
+- `comments`: Follow-up comments only (root comment excluded), ordered by datetime (ascending), with stable DOM-order fallback.
 - `resolved`: Derived from resolve/unresolve controls and thread status.
 - `commentCount`: Total number of comments in the thread (`rootComment` + `comments`).
+- `hasReplies`: whether there are follow-up comments after root comment.
+- `commentIdsInOrder` / `commentAuthorsInOrder`: chronological root+reply timeline arrays aligned by position.
+- `lastComment*`: compact factual fields computed from ordered comments.
+- `lastCommentByOtherUser`: strict identity check against `actors.currentUser.username`.
+- `selectionReason`: inclusion reason for downstream auditing.
+  Allowed values: `included_by_default`, `included_resolved`, `included_outdated`, `included_last_comment_by_current_user`.
+
+### Ordering Guarantees
+- `views.allConversationIds`, `views.resolved`, `views.unresolved`, `views.outdated`, `views.notOutdated`, `views.lastCommentByCurrentUser`, `views.lastCommentByOtherUser`, `views.unresolvedLastCommentByOtherUser`: preserve exported conversation order (`ordering.conversations = page_dom_order`).
+- `views.unresolvedLastCommentByOtherUserNewestFirst`: sorted by `lastCommentAt` descending; ties are sorted by conversation id ascending.
+- `views.byFile.<filePath>[]`: preserves exported conversation order within each file group.
+- `commentIdsInOrder`: chronological ascending (`ordering.comments`), root+replies timeline.
+- `commentAuthorsInOrder`: same ordering as `commentIdsInOrder` (index-aligned arrays).
+
+### Factual-Only Contract
+- Exporter output is limited to raw scraped values and deterministic facts.
+- No semantic interpretation fields are emitted (for example: priority, request category, likely resolved, next actor, or action state).
+- Workflow interpretation belongs to downstream skills/agents.
 
 ### Comment Field Meanings
 - `id`: Comment identifier (normalized when possible).
@@ -154,7 +309,10 @@ By default, `filtersApplied` and `stats` are omitted unless **Script stats** is 
 - `text`: Extracted comment body text.
 
 ### Additional Example File
-- `.ai/examples/schema-v2-output-example.json`
+- `.ai/examples/schema-v2.1-output-example.json`
+- `.ai/schema/gitea-pr-review-export.schema.json`
+- `tests/fixtures/schema-v2.1-output-example.json` (full PR scope)
+- `tests/fixtures/schema-v2.1-single-output-example.json` (single conversation scope)
 
 ## DOM assumptions
 The scraper assumes typical Gitea PR review markup:
