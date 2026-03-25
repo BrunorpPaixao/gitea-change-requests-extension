@@ -1,0 +1,324 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/export-schema-v2.1.json",
+  "title": "Gitea PR Review Export Envelope v2.1-factual",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "source",
+    "scope",
+    "actors",
+    "identityResolution",
+    "participants",
+    "exportOptions",
+    "completeness",
+    "ordering",
+    "counts",
+    "exportFingerprint",
+    "conversations",
+    "views"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "2.1-factual" },
+    "source": {
+      "type": "object",
+      "required": ["url", "host", "title", "owner", "repo", "prNumber", "scrapedAt"],
+      "properties": {
+        "url": { "type": "string" },
+        "host": { "type": "string" },
+        "title": { "type": ["string", "null"] },
+        "owner": { "type": ["string", "null"] },
+        "repo": { "type": ["string", "null"] },
+        "prNumber": { "type": ["integer", "null"] },
+        "scrapedAt": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "scope": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["pull_request", "single_conversation"]
+        }
+      },
+      "additionalProperties": true
+    },
+    "actors": {
+      "type": "object",
+      "required": ["currentUser", "prAuthor"],
+      "properties": {
+        "currentUser": {
+          "type": "object",
+          "required": ["username"],
+          "properties": {
+            "username": { "type": ["string", "null"] }
+          },
+          "additionalProperties": true
+        },
+        "prAuthor": {
+          "type": "object",
+          "required": ["username"],
+          "properties": {
+            "username": { "type": ["string", "null"] }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "identityResolution": {
+      "type": "object",
+      "required": ["currentUserKnown", "prAuthorKnown"],
+      "properties": {
+        "currentUserKnown": { "type": "boolean" },
+        "prAuthorKnown": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "participants": {
+      "type": "object",
+      "required": ["reviewers", "pageParticipants", "commentAuthors"],
+      "properties": {
+        "reviewers": { "$ref": "#/$defs/idArray" },
+        "pageParticipants": {
+          "$ref": "#/$defs/idArray",
+          "description": "Usernames extracted from the PR sidebar Participants section (heading text matching /participants?/i). This list only reflects that page section and does not imply reviewer or comment-author role."
+        },
+        "commentAuthors": { "$ref": "#/$defs/idArray" }
+      },
+      "additionalProperties": true
+    },
+    "exportOptions": {
+      "type": "object",
+      "required": [
+        "gitUserName",
+        "ignoreLastCommentByUser",
+        "ignoreResolved",
+        "ignoreOutdated",
+        "scriptStats",
+        "debug",
+        "verboseDiagnostics"
+      ],
+      "properties": {
+        "gitUserName": { "type": ["string", "null"] },
+        "ignoreLastCommentByUser": { "type": "boolean" },
+        "ignoreResolved": { "type": "boolean" },
+        "ignoreOutdated": { "type": "boolean" },
+        "scriptStats": { "type": "boolean" },
+        "debug": { "type": "boolean" },
+        "verboseDiagnostics": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "completeness": {
+      "type": "object",
+      "required": [
+        "allThreadsLoaded",
+        "outdatedSectionsExpanded",
+        "hiddenThreadsExpanded",
+        "parseWarnings"
+      ],
+      "properties": {
+        "allThreadsLoaded": { "type": "boolean" },
+        "outdatedSectionsExpanded": { "type": "boolean" },
+        "hiddenThreadsExpanded": { "type": "boolean" },
+        "parseWarnings": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "ordering": {
+      "type": "object",
+      "required": ["conversations", "comments"],
+      "properties": {
+        "conversations": { "const": "page_dom_order" },
+        "comments": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "counts": {
+      "type": "object",
+      "required": [
+        "conversationCount",
+        "resolvedCount",
+        "unresolvedCount",
+        "outdatedCount",
+        "lastCommentByOtherUserCount",
+        "commentDatetimeMissingCount"
+      ],
+      "properties": {
+        "conversationCount": { "type": "integer", "minimum": 0 },
+        "resolvedCount": { "type": "integer", "minimum": 0 },
+        "unresolvedCount": { "type": "integer", "minimum": 0 },
+        "outdatedCount": { "type": "integer", "minimum": 0 },
+        "lastCommentByOtherUserCount": { "type": "integer", "minimum": 0 },
+        "commentDatetimeMissingCount": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "exportFingerprint": { "type": "string" },
+    "conversations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "conversationId",
+          "filePath",
+          "lineNew",
+          "lineOld",
+          "diffSide",
+          "outdated",
+          "resolved",
+          "hunkHeader",
+          "threadUrl",
+          "rootComment",
+          "comments",
+          "commentCount",
+          "hasReplies",
+          "commentIdsInOrder",
+          "commentAuthorsInOrder",
+          "lastCommentId",
+          "lastCommentAuthor",
+          "lastCommentAuthorIsCurrentUser",
+          "lastCommentAuthorIsPrAuthor",
+          "lastCommentAt",
+          "lastCommentByOtherUser",
+          "selectionReason"
+        ],
+        "properties": {
+          "conversationId": { "type": ["string", "null"] },
+          "filePath": { "type": ["string", "null"] },
+          "lineNew": { "type": ["integer", "null"] },
+          "lineOld": { "type": ["integer", "null"] },
+          "diffSide": { "type": "string" },
+          "outdated": { "type": "boolean" },
+          "resolved": { "type": "boolean" },
+          "hunkHeader": { "type": ["string", "null"] },
+          "threadUrl": { "type": ["string", "null"] },
+          "lastCommentUrl": { "type": "string" },
+          "threadKey": { "type": "string" },
+          "codeContext": {
+            "type": "object",
+            "required": ["lines"],
+            "properties": {
+              "hunkHeader": { "type": "string" },
+              "lines": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["type", "oldLine", "newLine", "marker", "text"],
+                  "properties": {
+                    "type": { "type": "string", "enum": ["same", "add", "del"] },
+                    "oldLine": { "type": ["integer", "null"] },
+                    "newLine": { "type": ["integer", "null"] },
+                    "marker": { "type": "string" },
+                    "text": { "type": "string" }
+                  },
+                  "additionalProperties": true
+                }
+              }
+            },
+            "additionalProperties": true
+          },
+          "rootComment": { "$ref": "#/$defs/comment" },
+          "comments": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/comment" }
+          },
+          "commentCount": { "type": "integer", "minimum": 0 },
+          "hasReplies": { "type": "boolean" },
+          "commentIdsInOrder": {
+            "type": "array",
+            "items": { "type": ["string", "null"] },
+            "description": "Chronological ascending timeline ids including root comment first. Datetime ties or missing datetimes use stable DOM order."
+          },
+          "commentAuthorsInOrder": {
+            "type": "array",
+            "items": { "type": ["string", "null"] },
+            "description": "Chronological ascending timeline authors aligned positionally with commentIdsInOrder."
+          },
+          "lastCommentId": { "type": ["string", "null"] },
+          "lastCommentAuthor": { "type": ["string", "null"] },
+          "lastCommentAuthorIsCurrentUser": { "type": ["boolean", "null"] },
+          "lastCommentAuthorIsPrAuthor": { "type": ["boolean", "null"] },
+          "lastCommentAt": { "type": ["string", "null"] },
+          "lastCommentByOtherUser": { "type": ["boolean", "null"] },
+          "selectionReason": {
+            "type": "string",
+            "description": "Deterministic inclusion reason produced by exporter filter settings.",
+            "enum": [
+              "included_by_default",
+              "included_resolved",
+              "included_outdated",
+              "included_last_comment_by_current_user"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "views": {
+      "type": "object",
+      "required": [
+        "allConversationIds",
+        "resolved",
+        "unresolved",
+        "outdated",
+        "notOutdated",
+        "lastCommentByCurrentUser",
+        "lastCommentByOtherUser",
+        "unresolvedLastCommentByOtherUser",
+        "unresolvedLastCommentByOtherUserNewestFirst",
+        "byFile"
+      ],
+      "properties": {
+        "allConversationIds": { "$ref": "#/$defs/idArray" },
+        "resolved": { "$ref": "#/$defs/idArray" },
+        "unresolved": { "$ref": "#/$defs/idArray" },
+        "outdated": { "$ref": "#/$defs/idArray" },
+        "notOutdated": { "$ref": "#/$defs/idArray" },
+        "lastCommentByCurrentUser": { "$ref": "#/$defs/idArray" },
+        "lastCommentByOtherUser": { "$ref": "#/$defs/idArray" },
+        "unresolvedLastCommentByOtherUser": { "$ref": "#/$defs/idArray" },
+        "unresolvedLastCommentByOtherUserNewestFirst": {
+          "$ref": "#/$defs/idArray",
+          "description": "Subset of unresolvedLastCommentByOtherUser sorted by lastCommentAt descending, then conversation id ascending for deterministic ties."
+        },
+        "byFile": {
+          "type": "object",
+          "description": "Conversation ids grouped by filePath. Each file array preserves exported conversation order (page DOM order).",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "filtersApplied": { "type": "object" },
+    "stats": { "type": "object" }
+  },
+  "$defs": {
+    "idArray": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "comment": {
+      "type": "object",
+      "required": ["id", "author", "datetime", "text"],
+      "properties": {
+        "id": { "type": ["string", "null"] },
+        "author": { "type": ["string", "null"] },
+        "authorRole": { "type": "string" },
+        "datetime": { "type": ["string", "null"] },
+        "text": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

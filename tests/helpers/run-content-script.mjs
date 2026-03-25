@@ -13,7 +13,7 @@ const contentScriptTexts = contentScriptFiles.map((filePath) => {
   return readFileSync(fileUrl, "utf8");
 });
 
-export function createContentHarness({ html, url }) {
+export function createContentHarness({ html, url, storageLocal = {} }) {
   const dom = new JSDOM(html, {
     url,
     runScripts: "dangerously",
@@ -26,6 +26,18 @@ export function createContentHarness({ html, url }) {
       onMessage: {
         addListener(fn) {
           listeners.push(fn);
+        },
+      },
+    },
+    storage: {
+      local: {
+        get(keys, callback) {
+          const result = resolveStorageGet(storageLocal, keys);
+          if (typeof callback === "function") {
+            callback(result);
+            return;
+          }
+          return Promise.resolve(result);
         },
       },
     },
@@ -79,4 +91,25 @@ export function createContentHarness({ html, url }) {
       dom.window.close();
     },
   };
+}
+
+function resolveStorageGet(storageLocal, keys) {
+  if (Array.isArray(keys)) {
+    const payload = {};
+    for (const key of keys) {
+      payload[key] = storageLocal[key];
+    }
+    return payload;
+  }
+  if (typeof keys === "string") {
+    return { [keys]: storageLocal[keys] };
+  }
+  if (keys && typeof keys === "object") {
+    const payload = {};
+    for (const [key, defaultValue] of Object.entries(keys)) {
+      payload[key] = key in storageLocal ? storageLocal[key] : defaultValue;
+    }
+    return payload;
+  }
+  return { ...storageLocal };
 }

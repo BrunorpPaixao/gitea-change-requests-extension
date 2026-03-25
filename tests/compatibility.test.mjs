@@ -40,7 +40,16 @@ test("compatibility matrix fixtures respond to core messages", async () => {
         },
       });
       assert.equal(scrape.ok, true, `${fixture.name} scrape should succeed`);
-      assert.equal(scrape.result.schemaVersion, "2.0");
+      assert.equal(scrape.result.schemaVersion, "2.1-factual");
+      assert.equal(scrape.result.scope.type, "pull_request");
+      assert.equal(typeof scrape.result.exportOptions, "object");
+      assert.equal(typeof scrape.result.actors, "object");
+      assert.equal(typeof scrape.result.identityResolution, "object");
+      assert.equal(typeof scrape.result.participants, "object");
+      assert.equal(typeof scrape.result.completeness, "object");
+      assert.equal(typeof scrape.result.ordering, "object");
+      assert.equal(typeof scrape.result.counts, "object");
+      assert.equal(typeof scrape.result.views, "object");
       assert.equal(typeof scrape.result.stats.runtimeMs, "number");
     } finally {
       harness.dispose();

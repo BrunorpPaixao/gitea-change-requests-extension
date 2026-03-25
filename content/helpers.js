@@ -2,6 +2,8 @@
  * Content helper module.
  * Houses PR context, highlighting, single-copy UI, extraction logic, and generic DOM utilities.
  */
+  var POPUP_SETTINGS_STORAGE_KEY = "gitea-pr-review-exporter-popup-settings-v2";
+
   function parsePrMetaFromLocation(locationLike) {
     const pathname = (locationLike && locationLike.pathname) || "";
     const match = pathname.match(/^\/([^/]+)\/([^/]+)\/pulls\/(\d+)\/?$/i);
@@ -274,11 +276,13 @@
       const resolution = getConversationResolution(block);
       conversation.resolved = resolution === "resolved";
       conversation.commentCount = (conversation.rootComment ? 1 : 0) + conversation.comments.length;
+      const resolvedCurrentUserName = await resolveSingleConversationCurrentUserName();
 
-      const envelope = buildSchemaV2Envelope(
+      const envelope = buildSchemaV21Envelope(
         [conversation],
+        [block],
         {
-          userName: null,
+          userName: resolvedCurrentUserName,
           ignoreWhereLastCommentIsFromUser: false,
           ignoreResolvedChanges: false,
           ignoreOutdatedChanges: false,
@@ -295,6 +299,15 @@
           lastCommentByUserSkippedOutdated: 0,
           skippedNoConversationData: 0,
           deduped: 0,
+        },
+        {
+          allThreadsLoaded: true,
+          outdatedSectionsExpanded: true,
+          hiddenThreadsExpanded: true,
+          parseWarnings: [],
+        },
+        {
+          scopeType: "single_conversation",
         }
       );
 
@@ -308,6 +321,49 @@
       setTemporaryButtonState(button, "Copied", 1200);
     } finally {
       button.disabled = false;
+    }
+  }
+
+  async function resolveSingleConversationCurrentUserName() {
+    const popupUserName = normalizeUserName(await getPopupUserNameFromStorage());
+    if (popupUserName) {
+      return popupUserName;
+    }
+    const pageUserName = normalizeUserName(detectDefaultGitUserName() || "");
+    return pageUserName || null;
+  }
+
+  async function getPopupUserNameFromStorage() {
+    if (!globalThis.chrome?.storage?.local?.get) {
+      return null;
+    }
+
+    try {
+      const key = POPUP_SETTINGS_STORAGE_KEY;
+      const payload = await new Promise((resolve, reject) => {
+        let settled = false;
+        const done = (value) => {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          resolve(value);
+        };
+        try {
+          const maybePromise = chrome.storage.local.get(key, done);
+          if (maybePromise && typeof maybePromise.then === "function") {
+            maybePromise.then(done).catch(reject);
+          }
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      const settings = payload?.[key];
+      const userName = valueOrNull(settings?.userName);
+      return userName || null;
+    } catch (_error) {
+      return null;
     }
   }
 
@@ -507,6 +563,178 @@
     return null;
   }
 
+  function detectPrAuthorUserName() {
+    const pullDescNode = document.querySelector("#pull-desc-display.pull-desc, #pull-desc-display, .pull-desc");
+    if (pullDescNode instanceof Element) {
+      const pullDescText = normalizeWhitespace(pullDescNode.textContent || "");
+      if (/wants\s+to\s+merge/i.test(pullDescText)) {
+        const profileLinks = Array.from(pullDescNode.querySelectorAll("a[href^='/']"));
+        for (const link of profileLinks) {
+          const href = valueOrNull(link.getAttribute("href")) || "";
+          if (!/^\/[^/]+\/?$/.test(href.trim())) {
+            continue;
+          }
+          const username = normalizeUserName(extractUserNameFromHref(href) || "");
+          if (username) {
+            return username;
+          }
+        }
+      }
+    }
+
+    const authorCandidates = [
+      "#issue-title ~ .pull-desc .author",
+      "#issue-title + .pull-desc .author",
+      "#issue-title + .issue-title-meta .author",
+      ".issue-title-meta .author",
+      "#pull-header .author",
+      ".pull-header .author",
+      ".pull-desc .author",
+      "#pull-desc .author",
+      "[data-test-id='pr-header-author']",
+      "[data-test-id='issue-author-link']",
+    ];
+    for (const selector of authorCandidates) {
+      const node = document.querySelector(selector);
+      const text = valueOrNull(node?.textContent);
+      const normalized = normalizeUserName(text || "");
+      if (normalized) {
+        return normalized;
+      }
+      const hrefCandidate = valueOrNull(node?.getAttribute("href"));
+      const fromHref = normalizeUserName(extractUserNameFromHref(hrefCandidate || "") || "");
+      if (fromHref) {
+        return fromHref;
+      }
+    }
+
+    return null;
+  }
+
+  function detectReviewerUserNames() {
+    const reviewers = [];
+
+    const reviewerItems = Array.from(document.querySelectorAll(".show-modal[data-modal-reviewer-id]"))
+      .map((node) => node.closest(".item"))
+      .filter((node) => node instanceof Element);
+    for (const item of reviewerItems) {
+      const username = extractUserNameFromElement(item);
+      if (username) {
+        reviewers.push(username);
+      }
+    }
+
+    if (!reviewers.length) {
+      const section = findSidebarSectionByHeading(/reviewers?/i);
+      if (section) {
+        const sectionUsers = extractUserNamesFromSection(section);
+        reviewers.push(...sectionUsers);
+      }
+    }
+
+    return dedupeUserNamesInDomOrder(reviewers);
+  }
+
+  function detectPageParticipantUserNames() {
+    const section = findSidebarSectionByHeading(/participants?/i);
+    if (!section) {
+      return [];
+    }
+
+    const participants = extractUserNamesFromSection(section);
+    return dedupeUserNamesInDomOrder(participants);
+  }
+
+  function findSidebarSectionByHeading(pattern) {
+    const headingCandidates = Array.from(
+      document.querySelectorAll("h1, h2, h3, h4, h5, .ui.top.attached.header, .header, .text.bold, .item > strong")
+    );
+    for (const heading of headingCandidates) {
+      const headingText = normalizeWhitespace(heading.textContent || "");
+      if (!headingText || !pattern.test(headingText)) {
+        continue;
+      }
+
+      const sectionRoot =
+        heading.closest(".segment, .ui.segment, .issue-sidebar, .issue-sidebar-item, .item, .content, .flex-item");
+      if (sectionRoot instanceof Element) {
+        return sectionRoot;
+      }
+      if (heading.parentElement instanceof Element) {
+        return heading.parentElement;
+      }
+    }
+    return null;
+  }
+
+  function extractUserNamesFromSection(sectionRoot) {
+    if (!(sectionRoot instanceof Element)) {
+      return [];
+    }
+
+    const users = [];
+    const anchors = Array.from(sectionRoot.querySelectorAll("a[href^='/']"));
+    for (const anchor of anchors) {
+      if (anchor.matches(".show-modal, .link-action, [href='#']")) {
+        continue;
+      }
+      const username = extractUserNameFromAnchor(anchor);
+      if (username) {
+        users.push(username);
+      }
+    }
+
+    return dedupeUserNamesInDomOrder(users);
+  }
+
+  function extractUserNameFromElement(root) {
+    if (!(root instanceof Element)) {
+      return null;
+    }
+    const anchor = root.querySelector("a[href^='/']:not(.show-modal):not(.link-action):not([href='#'])");
+    if (!anchor) {
+      return null;
+    }
+    return extractUserNameFromAnchor(anchor);
+  }
+
+  function extractUserNameFromAnchor(anchor) {
+    if (!(anchor instanceof Element)) {
+      return null;
+    }
+
+    const byAriaLabel = normalizeUserName(valueOrNull(anchor.getAttribute("aria-label")) || "");
+    if (byAriaLabel) {
+      return byAriaLabel;
+    }
+
+    const byTooltip = normalizeUserName(valueOrNull(anchor.getAttribute("data-tooltip-content")) || "");
+    if (byTooltip) {
+      return byTooltip;
+    }
+
+    const byText = normalizeUserName(valueOrNull(anchor.textContent) || "");
+    if (byText) {
+      return byText;
+    }
+
+    return normalizeUserName(extractUserNameFromHref(anchor.getAttribute("href") || "") || "");
+  }
+
+  function dedupeUserNamesInDomOrder(userNames) {
+    const deduped = [];
+    const seen = new Set();
+    for (const rawName of userNames || []) {
+      const username = normalizeUserName(rawName || "");
+      if (!username || seen.has(username)) {
+        continue;
+      }
+      seen.add(username);
+      deduped.push(username);
+    }
+    return deduped;
+  }
+
   function detectSignedInUserFromHeader() {
     const strongCandidates = Array.from(
       document.querySelectorAll("div.header strong, .header strong, #navbar strong, .ui.menu strong")
@@ -560,6 +788,10 @@
   async function expandGlobalHiddenConversationAreas() {
     const clicked = new Set();
     const candidates = Array.from(document.querySelectorAll("button, a[role='button'], a"));
+    let attemptedOutdatedExpand = false;
+    let expandedOutdated = false;
+    let attemptedHiddenExpand = false;
+    let expandedHidden = false;
 
     for (const el of candidates) {
       const label = getButtonLikeText(el);
@@ -569,14 +801,33 @@
 
       // Older/outdated thread comments are often behind this control.
       if (/show\s+outdated/i.test(label) && isElementActionable(el)) {
+        attemptedOutdatedExpand = true;
         const key = elementKey(el);
         if (!clicked.has(key)) {
           clicked.add(key);
           el.click();
+          expandedOutdated = true;
           await waitForDomSettle(document.body, 500);
         }
       }
+      if (/show\s+conversation|show\s+comments|load\s+more|expand/i.test(label) && isElementActionable(el)) {
+        attemptedHiddenExpand = true;
+        const key = elementKey(el);
+        if (!clicked.has(key)) {
+          clicked.add(key);
+          el.click();
+          expandedHidden = true;
+          await waitForDomSettle(document.body, 450);
+        }
+      }
     }
+
+    return {
+      attemptedOutdatedExpand,
+      expandedOutdated,
+      attemptedHiddenExpand,
+      expandedHidden,
+    };
   }
 
   function getConversationResolution(block) {
@@ -612,6 +863,8 @@
 
   async function expandConversationIfNeeded(block) {
     const clicked = new Set();
+    let attemptedHiddenExpand = false;
+    let expandedHidden = false;
 
     const selectors = [
       "button",
@@ -632,6 +885,7 @@
         if (!/show\s+outdated|show\s+conversation|show\s+comments|expand|load\s+more/i.test(label)) {
           continue;
         }
+        attemptedHiddenExpand = true;
         if (!isElementActionable(button)) {
           continue;
         }
@@ -643,11 +897,247 @@
         clicked.add(key);
 
         button.click();
+        expandedHidden = true;
         await waitForDomSettle(block, 700);
       }
     }
 
     await waitForDomSettle(block, 300);
+    return { attemptedHiddenExpand, expandedHidden };
+  }
+
+  function maybeExtractCodeContext(block, target) {
+    if (!(block instanceof Element)) {
+      return null;
+    }
+
+    const targetMeta = normalizeCodeContextTarget(target);
+    if (!targetMeta) {
+      return null;
+    }
+
+    const tables = Array.from(block.querySelectorAll("table"));
+    for (const table of tables) {
+      const context = extractCodeContextFromDiffTable(table, targetMeta);
+      if (context) {
+        return context;
+      }
+    }
+
+    return null;
+  }
+
+  function normalizeCodeContextTarget(target) {
+    if (Number.isInteger(target) && target > 0) {
+      return { lineNew: target, lineOld: null, diffSide: "new" };
+    }
+    if (!target || typeof target !== "object") {
+      return null;
+    }
+    const lineNew = Number.isInteger(target.lineNew) && target.lineNew > 0 ? target.lineNew : null;
+    const lineOld = Number.isInteger(target.lineOld) && target.lineOld > 0 ? target.lineOld : null;
+    const diffSide = target.diffSide === "old" ? "old" : "new";
+    if (!lineNew && !lineOld) {
+      return null;
+    }
+    return { lineNew, lineOld, diffSide };
+  }
+
+  function extractCodeContextFromDiffTable(table, targetMeta) {
+    if (!(table instanceof Element)) {
+      return null;
+    }
+
+    const rows = Array.from(table.querySelectorAll("tr[data-line-type]"));
+    if (!rows.length) {
+      return null;
+    }
+
+    const parsedRows = [];
+    let currentHunkHeader = null;
+    for (const row of rows) {
+      const lineType = String(row.getAttribute("data-line-type") || "");
+      if (lineType === "tag") {
+        currentHunkHeader = extractHunkHeaderFromRow(row);
+        continue;
+      }
+      if (!["same", "add", "del"].includes(lineType)) {
+        continue;
+      }
+
+      const parsed = parseDiffCodeRow(row, lineType);
+      if (!parsed) {
+        continue;
+      }
+      parsedRows.push({ ...parsed, hunkHeader: currentHunkHeader });
+    }
+
+    if (!parsedRows.length) {
+      return null;
+    }
+
+    const targetIndex = findTargetDiffRowIndex(parsedRows, targetMeta);
+    if (targetIndex < 0) {
+      return null;
+    }
+
+    const targetRow = parsedRows[targetIndex];
+    const sameHunkRows = parsedRows.filter((row) => row.hunkHeader === targetRow.hunkHeader);
+    const indexWithinHunk = sameHunkRows.findIndex((row) => row === targetRow);
+    if (indexWithinHunk < 0) {
+      return null;
+    }
+
+    const boundedRows = selectGroundedContextRows(sameHunkRows, indexWithinHunk, 9);
+    if (!boundedRows.length) {
+      return null;
+    }
+
+    const codeContext = {
+      lines: boundedRows.map((row) => ({
+        type: row.type,
+        oldLine: row.oldLine,
+        newLine: row.newLine,
+        marker: row.marker,
+        text: row.text,
+      })),
+    };
+    if (targetRow.hunkHeader) {
+      codeContext.hunkHeader = targetRow.hunkHeader;
+    }
+    return codeContext;
+  }
+
+  function extractHunkHeaderFromRow(row) {
+    const hunkText = row.querySelector(".blob-hunk .code-inner, .blob-hunk")?.textContent;
+    return valueOrNull(hunkText);
+  }
+
+  function parseDiffCodeRow(row, lineType) {
+    const oldLineRaw = row.querySelector(".lines-num-old[data-line-num]")?.getAttribute("data-line-num");
+    const newLineRaw = row.querySelector(".lines-num-new[data-line-num]")?.getAttribute("data-line-num");
+    const oldLine = parseDiffLineNum(oldLineRaw);
+    const newLine = parseDiffLineNum(newLineRaw);
+    const marker = extractDiffTypeMarker(row);
+    const codeText = extractVisibleDiffCodeText(row);
+    if (codeText === null) {
+      return null;
+    }
+    return {
+      type: lineType,
+      oldLine,
+      newLine,
+      marker,
+      text: codeText,
+    };
+  }
+
+  function parseDiffLineNum(raw) {
+    const text = String(raw || "").trim();
+    if (!text) {
+      return null;
+    }
+    const parsed = Number.parseInt(text, 10);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  function extractDiffTypeMarker(row) {
+    const marker = row.querySelector("[data-type-marker]")?.getAttribute("data-type-marker");
+    const normalized = marker === "+" || marker === "-" || marker === " " ? marker : "";
+    return normalized;
+  }
+
+  function extractVisibleDiffCodeText(row) {
+    const codeNode = row.querySelector("td.lines-code code.code-inner, td.lines-code .code-inner, td.lines-code");
+    if (!(codeNode instanceof Element)) {
+      return null;
+    }
+    let text = codeNode.textContent || "";
+    text = text.replace(/\r/g, "");
+    text = text.replace(/^\n+/, "").replace(/\n+$/, "");
+    if (/^\s+$/.test(text)) {
+      return "";
+    }
+    return text;
+  }
+
+  function findTargetDiffRowIndex(rows, targetMeta) {
+    const targetLine = targetMeta.diffSide === "old" ? targetMeta.lineOld : targetMeta.lineNew;
+    if (targetLine) {
+      const key = targetMeta.diffSide === "old" ? "oldLine" : "newLine";
+      const exactIndex = rows.findIndex((row) => row[key] === targetLine);
+      if (exactIndex >= 0) {
+        return exactIndex;
+      }
+    }
+
+    if (targetMeta.lineNew) {
+      const newIndex = rows.findIndex((row) => row.newLine === targetMeta.lineNew);
+      if (newIndex >= 0) {
+        return newIndex;
+      }
+    }
+    if (targetMeta.lineOld) {
+      const oldIndex = rows.findIndex((row) => row.oldLine === targetMeta.lineOld);
+      if (oldIndex >= 0) {
+        return oldIndex;
+      }
+    }
+
+    return -1;
+  }
+
+  function selectGroundedContextRows(rows, targetIndex, maxRows) {
+    if (!rows.length) {
+      return [];
+    }
+    if (rows.length <= maxRows) {
+      return rows;
+    }
+
+    // Expand to the local changed cluster around the target (if any).
+    let clusterStart = targetIndex;
+    let clusterEnd = targetIndex;
+    while (clusterStart > 0 && rows[clusterStart - 1].type !== "same") {
+      clusterStart -= 1;
+    }
+    while (clusterEnd < rows.length - 1 && rows[clusterEnd + 1].type !== "same") {
+      clusterEnd += 1;
+    }
+
+    // Prefer nearby unchanged rows around the matched area when available.
+    let start = clusterStart;
+    let end = clusterEnd;
+    let sameBefore = 0;
+    let sameAfter = 0;
+
+    // First pass: explicitly try to include up to 3 `same` rows on each side.
+    let addedSame = true;
+    while (addedSame && end - start + 1 < maxRows) {
+      addedSame = false;
+      if (start > 0 && sameBefore < 3 && rows[start - 1].type === "same") {
+        start -= 1;
+        sameBefore += 1;
+        addedSame = true;
+      }
+      if (end < rows.length - 1 && sameAfter < 3 && end - start + 1 < maxRows && rows[end + 1].type === "same") {
+        end += 1;
+        sameAfter += 1;
+        addedSame = true;
+      }
+    }
+
+    while (end - start + 1 < maxRows) {
+      if (start > 0) {
+        start -= 1;
+      } else if (end < rows.length - 1) {
+        end += 1;
+      } else {
+        break;
+      }
+    }
+
+    return rows.slice(start, end + 1);
   }
 
   function extractConversation(block) {
