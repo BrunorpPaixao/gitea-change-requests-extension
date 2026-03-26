@@ -53,6 +53,15 @@
             <input id="ignoreCommentsCheckbox" type="checkbox" checked title="Exclude standalone timeline comments from exports and tests." />
             <span>Ignore comments</span>
           </label>
+          <label class="check-row" for="shortKeysCheckbox" title="Use shortened JSON keys for compact agent export.">
+            <input id="shortKeysCheckbox" type="checkbox" checked title="Use shortened JSON keys for compact agent export." />
+            <span>Use shortened JSON keys</span>
+            <span
+              class="option-tip"
+              aria-label="Shortened keys reduce token usage for LLM ingestion while preserving values."
+              title="Shortened keys reduce token usage for LLM ingestion while preserving values."
+            >i</span>
+          </label>
           <label class="check-row" for="minifyJsonCheckbox" title="Emit compact JSON instead of pretty-printed JSON.">
             <input id="minifyJsonCheckbox" type="checkbox" title="Emit compact JSON instead of pretty-printed JSON." />
             <span>Minify JSON output</span>
@@ -160,6 +169,7 @@
       </div>
     </main>
 
+    <script src="../shared/export-serializer.js"></script>
     <script src="state.js"></script>
     <script src="ui.js"></script>
     <script src="system.js"></script>

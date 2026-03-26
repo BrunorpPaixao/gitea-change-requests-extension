@@ -20,6 +20,7 @@ const ignoreLastCommentCheckbox = document.getElementById("ignoreLastCommentChec
 const ignoreResolvedCheckbox = document.getElementById("ignoreResolvedCheckbox");
 const ignoreOutdatedCheckbox = document.getElementById("ignoreOutdatedCheckbox");
 const ignoreCommentsCheckbox = document.getElementById("ignoreCommentsCheckbox");
+const shortKeysCheckbox = document.getElementById("shortKeysCheckbox");
 const minifyJsonCheckbox = document.getElementById("minifyJsonCheckbox");
 const includeScriptStatsCheckbox = document.getElementById("includeScriptStatsCheckbox");
 const giveAiContextCheckbox = document.getElementById("giveAiContextCheckbox");
@@ -47,6 +48,7 @@ const DEFAULT_POPUP_SETTINGS = {
   ignoreResolvedChanges: true,
   ignoreOutdatedChanges: true,
   ignoreComments: true,
+  shortKeys: true,
   minifyJsonOutput: false,
   includeScriptStats: false,
   giveAiContext: false,
@@ -71,6 +73,7 @@ const REQUIRED_UI_ELEMENTS = [
   ["ignoreResolvedCheckbox", ignoreResolvedCheckbox],
   ["ignoreOutdatedCheckbox", ignoreOutdatedCheckbox],
   ["ignoreCommentsCheckbox", ignoreCommentsCheckbox],
+  ["shortKeysCheckbox", shortKeysCheckbox],
   ["minifyJsonCheckbox", minifyJsonCheckbox],
   ["includeScriptStatsCheckbox", includeScriptStatsCheckbox],
   ["giveAiContextCheckbox", giveAiContextCheckbox],

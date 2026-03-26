@@ -402,6 +402,7 @@
       const resolution = getConversationResolution(block);
       conversation.resolved = resolution === "resolved";
       conversation.commentCount = (conversation.rootComment ? 1 : 0) + conversation.comments.length;
+      const popupSettings = (await getPopupSettingsFromStorage()) || {};
       const resolvedCurrentUserName = await resolveSingleConversationCurrentUserName();
 
       const envelope = buildSchemaV21Envelope(
@@ -438,7 +439,12 @@
         }
       );
 
-      const jsonText = JSON.stringify(envelope, null, 2);
+      const shortKeys = popupSettings.shortKeys !== false;
+      const minify = Boolean(popupSettings.minifyJsonOutput);
+      const serializer = globalThis.GPREExportSerializer;
+      const jsonText = serializer
+        ? serializer.serializeForExport(envelope, { shortKeys, minify })
+        : JSON.stringify(envelope, null, minify ? 0 : 2);
       const ok = await copyTextToClipboard(jsonText);
       if (!ok) {
         setTemporaryButtonState(button, "Copy failed", 1600);
@@ -461,6 +467,12 @@
   }
 
   async function getPopupUserNameFromStorage() {
+    const settings = await getPopupSettingsFromStorage();
+    const userName = valueOrNull(settings?.userName);
+    return userName || null;
+  }
+
+  async function getPopupSettingsFromStorage() {
     if (!globalThis.chrome?.storage?.local?.get) {
       return null;
     }
@@ -487,8 +499,7 @@
       });
 
       const settings = payload?.[key];
-      const userName = valueOrNull(settings?.userName);
-      return userName || null;
+      return settings && typeof settings === "object" ? settings : null;
     } catch (_error) {
       return null;
     }

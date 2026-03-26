@@ -129,10 +129,15 @@ async function buildExportData() {
   const conversations = Array.isArray(exportPayload.conversations) ? exportPayload.conversations : [];
   summaryEl.textContent = `Conversations found: ${conversations.length}`;
   const giveAiContext = Boolean(giveAiContextCheckbox?.checked);
+  const shortKeys = shortKeysCheckbox?.checked !== false;
   const minifyJsonOutput = Boolean(minifyJsonCheckbox?.checked);
+  const serializer = globalThis.GPREExportSerializer;
+  const outputPayload = serializer
+    ? serializer.transformForExport(exportPayload, { shortKeys })
+    : exportPayload;
   const outputText = giveAiContext
-    ? buildAiContextText(exportPayload, { minifyJsonOutput })
-    : JSON.stringify(exportPayload, null, minifyJsonOutput ? 0 : 2);
+    ? buildAiContextText(outputPayload, { minifyJsonOutput })
+    : JSON.stringify(outputPayload, null, minifyJsonOutput ? 0 : 2);
   const filename = giveAiContext
     ? buildAiContextFilename(tab.url || "", tab.title || "")
     : buildFilename(tab.url || "", tab.title || "");
