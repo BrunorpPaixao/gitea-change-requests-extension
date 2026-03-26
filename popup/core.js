@@ -5,6 +5,7 @@
 async function bootstrap() {
   initTheme();
   ensureLastCommentFilterAtBottom();
+  initializeActionTabs();
   initializeButtonRippleEffects();
   initializeCheckboxMicroFeedback();
   setBundleVisualState("idle");
@@ -111,11 +112,7 @@ async function handleAction(action, actionOptions = {}) {
       triggerActionPulse(sourceButton);
       showSuccessBadge(sourceButton, "Copied");
       markDiagnosticsReadyCue();
-      setStatus(
-        exportData.giveAiContext
-          ? `Copied AI context for ${exportData.conversationCount} conversations.`
-          : `Copied ${exportData.conversationCount} conversations.`
-      );
+      setStatus(buildExportActionStatusText("Copied", exportData));
       return;
     }
 
@@ -123,11 +120,7 @@ async function handleAction(action, actionOptions = {}) {
     triggerActionPulse(sourceButton);
     showSuccessBadge(sourceButton, "Saved");
     markDiagnosticsReadyCue();
-    setStatus(
-      exportData.giveAiContext
-        ? `Downloaded AI context for ${conversationCount} conversations.`
-        : `Downloaded ${conversationCount} conversations.`
-    );
+    setStatus(buildExportActionStatusText("Downloaded", { ...exportData, conversationCount }));
   } catch (error) {
     setStatus("");
     setError(error.message || String(error));
@@ -192,6 +185,10 @@ async function buildExportData(actionOptions = {}) {
     ? buildAiContextFilename(tab.url || "", tab.title || "")
     : buildFilename(tab.url || "", tab.title || "");
   const mimeType = giveAiContext ? "text/plain;charset=utf-8" : "application/json";
+  const sizeMetrics = buildExportSizeOptimizationMetrics(exportPayload, {
+    selectedShortKeys: shortKeys,
+    selectedMinify: minifyJsonOutput,
+  });
   return {
     tab,
     outputText,
@@ -199,6 +196,7 @@ async function buildExportData(actionOptions = {}) {
     giveAiContext,
     conversationCount: conversations.length,
     mimeType,
+    sizeMetrics,
   };
 }
 
@@ -353,12 +351,25 @@ async function handleDiagnosticsAction(action) {
     }
 
     const payload = response.result || {};
+    let optimizationMetrics = null;
+    try {
+      const { exportPayload } = await runScrape();
+      optimizationMetrics = buildExportSizeOptimizationMetrics(exportPayload, {
+        selectedShortKeys: shortKeysCheckbox?.checked !== false,
+        selectedMinify: Boolean(minifyJsonCheckbox?.checked),
+      });
+      payload.exportSizeOptimization = optimizationMetrics;
+    } catch (_error) {
+      // Keep diagnostics copy/download available even if scrape refresh fails.
+    }
+
     const text = JSON.stringify(payload, null, 2);
     if (action === "copy") {
       await navigator.clipboard.writeText(text);
       triggerActionPulse(copyDiagnosticsBtn);
       showSuccessBadge(copyDiagnosticsBtn, "Copied");
-      setStatus("Copied diagnostics JSON.");
+      const savingsHint = optimizationMetrics ? buildSavingsHintText(optimizationMetrics) : "";
+      setStatus(savingsHint ? `Copied diagnostics JSON. ${savingsHint}` : "Copied diagnostics JSON.");
       return;
     }
 
@@ -373,7 +384,8 @@ async function handleDiagnosticsAction(action) {
       });
       triggerActionPulse(downloadDiagnosticsBtn);
       showSuccessBadge(downloadDiagnosticsBtn, "Saved");
-      setStatus("Downloaded diagnostics JSON.");
+      const savingsHint = optimizationMetrics ? buildSavingsHintText(optimizationMetrics) : "";
+      setStatus(savingsHint ? `Downloaded diagnostics JSON. ${savingsHint}` : "Downloaded diagnostics JSON.");
     } finally {
       setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
     }
@@ -383,6 +395,95 @@ async function handleDiagnosticsAction(action) {
   } finally {
     setBusy(false);
   }
+}
+
+function buildExportSizeOptimizationMetrics(exportPayload, options = {}) {
+  const serializer = globalThis.GPREExportSerializer;
+  const fullPayload = serializer
+    ? serializer.transformForExport(exportPayload, { shortKeys: false })
+    : exportPayload;
+  const shortPayload = serializer
+    ? serializer.transformForExport(exportPayload, { shortKeys: true })
+    : exportPayload;
+
+  const fullPrettyChars = JSON.stringify(fullPayload, null, 2).length;
+  const fullMinifiedChars = JSON.stringify(fullPayload).length;
+  const shortPrettyChars = JSON.stringify(shortPayload, null, 2).length;
+  const shortMinifiedChars = JSON.stringify(shortPayload).length;
+
+  const selectedShortKeys = Boolean(options.selectedShortKeys);
+  const selectedMinify = Boolean(options.selectedMinify);
+  const selectedChars = selectedShortKeys
+    ? selectedMinify
+      ? shortMinifiedChars
+      : shortPrettyChars
+    : selectedMinify
+      ? fullMinifiedChars
+      : fullPrettyChars;
+  const selectedSavedChars = Math.max(0, fullPrettyChars - selectedChars);
+
+  return {
+    baseline: {
+      mode: "full_keys_pretty",
+      chars: fullPrettyChars,
+    },
+    minifiedOnly: buildSavingsSummary(fullPrettyChars, fullMinifiedChars),
+    shortKeysOnly: buildSavingsSummary(fullPrettyChars, shortPrettyChars),
+    minifiedAndShortKeys: buildSavingsSummary(fullPrettyChars, shortMinifiedChars),
+    selectedMode: {
+      shortKeys: selectedShortKeys,
+      minifyJsonOutput: selectedMinify,
+      chars: selectedChars,
+      savedChars: selectedSavedChars,
+      savedPercent: computeSavedPercent(selectedSavedChars, fullPrettyChars),
+    },
+  };
+}
+
+function buildSavingsSummary(baselineChars, currentChars) {
+  const savedChars = Math.max(0, baselineChars - currentChars);
+  return {
+    chars: currentChars,
+    savedChars,
+    savedPercent: computeSavedPercent(savedChars, baselineChars),
+  };
+}
+
+function computeSavedPercent(savedChars, baselineChars) {
+  if (!Number.isFinite(baselineChars) || baselineChars <= 0) {
+    return 0;
+  }
+  return Number(((savedChars / baselineChars) * 100).toFixed(2));
+}
+
+function buildSavingsHintText(sizeMetrics) {
+  const baseline = sizeMetrics?.baseline || null;
+  const selected = sizeMetrics?.selectedMode || null;
+  if (
+    !baseline ||
+    !selected ||
+    !Number.isFinite(baseline.chars) ||
+    !Number.isFinite(selected.chars) ||
+    !Number.isFinite(selected.savedChars) ||
+    selected.savedChars <= 0
+  ) {
+    return "";
+  }
+  return `Before: ${baseline.chars.toLocaleString()} | After: ${selected.chars.toLocaleString()} (saved ${selected.savedChars.toLocaleString()}, ${selected.savedPercent}%)`;
+}
+
+function buildExportActionStatusText(verb, exportData) {
+  const count = Number(exportData?.conversationCount || 0);
+  const base = exportData?.giveAiContext
+    ? `${verb} AI context for ${count} conversations.`
+    : `${verb} ${count} conversations.`;
+
+  const showSavings = Boolean(debugCheckbox?.checked || minifyJsonCheckbox?.checked || shortKeysCheckbox?.checked);
+  if (!showSavings || !exportData?.sizeMetrics) {
+    return base;
+  }
+  const savingsHint = buildSavingsHintText(exportData.sizeMetrics);
+  return savingsHint ? `${base} ${savingsHint}` : base;
 }
 
 
