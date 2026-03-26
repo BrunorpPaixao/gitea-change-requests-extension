@@ -20,6 +20,7 @@ async function ensureContentScriptsInjected(tabId) {
   await chrome.scripting.executeScript({
     target: { tabId },
     files: [
+      "shared/export-serializer.js",
       "content/content.js",
       "content/scrape-core.js",
       "content/helpers.js",
@@ -330,22 +331,22 @@ function getTimestampLocal() {
 }
 
 function ensureLastCommentFilterAtBottom() {
-  const filters = document.querySelector(".filters");
-  const lastRow = filters?.querySelector("[data-gpre-last-filter='1']");
-  if (!(filters && lastRow)) {
+  const container = document.getElementById("functionalityOptions");
+  const lastRow = container?.querySelector("[data-gpre-last-filter='1']");
+  if (!(container && lastRow)) {
     return;
   }
 
   const pinLast = () => {
-    const currentLast = filters.lastElementChild;
+    const currentLast = container.lastElementChild;
     if (currentLast !== lastRow) {
-      filters.appendChild(lastRow);
+      container.appendChild(lastRow);
     }
   };
 
   pinLast();
   const observer = new MutationObserver(() => pinLast());
-  observer.observe(filters, { childList: true });
+  observer.observe(container, { childList: true });
 }
 
 function bindSettingsPersistence() {
@@ -360,6 +361,7 @@ function bindSettingsPersistence() {
   ignoreResolvedCheckbox.addEventListener("change", saveOnChange);
   ignoreOutdatedCheckbox.addEventListener("change", saveOnChange);
   ignoreCommentsCheckbox.addEventListener("change", saveOnChange);
+  shortKeysCheckbox.addEventListener("change", saveOnChange);
   minifyJsonCheckbox.addEventListener("change", saveOnChange);
   includeScriptStatsCheckbox.addEventListener("change", saveOnChange);
   giveAiContextCheckbox.addEventListener("change", saveOnChange);
@@ -374,6 +376,7 @@ function readPopupSettingsFromUi() {
     ignoreResolvedChanges: ignoreResolvedCheckbox.checked,
     ignoreOutdatedChanges: ignoreOutdatedCheckbox.checked,
     ignoreComments: ignoreCommentsCheckbox.checked,
+    shortKeys: shortKeysCheckbox.checked,
     minifyJsonOutput: minifyJsonCheckbox.checked,
     includeScriptStats: includeScriptStatsCheckbox.checked,
     giveAiContext: giveAiContextCheckbox.checked,
@@ -389,6 +392,7 @@ function applyPopupSettings(settings) {
   ignoreResolvedCheckbox.checked = Boolean(next.ignoreResolvedChanges);
   ignoreOutdatedCheckbox.checked = Boolean(next.ignoreOutdatedChanges);
   ignoreCommentsCheckbox.checked = Boolean(next.ignoreComments);
+  shortKeysCheckbox.checked = next.shortKeys !== false;
   minifyJsonCheckbox.checked = Boolean(next.minifyJsonOutput);
   includeScriptStatsCheckbox.checked = Boolean(next.includeScriptStats);
   giveAiContextCheckbox.checked = Boolean(next.giveAiContext);
@@ -432,6 +436,9 @@ function updateActiveFiltersSummary() {
   }
   if (ignoreCommentsCheckbox.checked) {
     active.push("comments ignored");
+  }
+  if (shortKeysCheckbox.checked) {
+    active.push("short keys");
   }
   if (minifyJsonCheckbox.checked) {
     active.push("json minified");

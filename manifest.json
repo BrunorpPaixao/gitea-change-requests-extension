@@ -23,6 +23,7 @@
       "matches": ["http://*/*/*/pulls/*", "https://*/*/*/pulls/*"],
       "include_globs": ["http://git*/*/*/pulls/*", "https://git*/*/*/pulls/*"],
       "js": [
+        "shared/export-serializer.js",
         "content/content.js",
         "content/scrape-core.js",
         "content/helpers.js",

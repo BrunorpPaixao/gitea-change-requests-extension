@@ -8,6 +8,33 @@ if (missingUiElements.length) {
   copyBtn.classList.add("primary");
 
   copyBtn.addEventListener("click", () => handleAction("copy"));
+  jsonMinBtn.addEventListener("click", async () => {
+    await handleAction("copy", {
+      sourceButton: jsonMinBtn,
+      serializationOverrides: {
+        minifyJsonOutput: true,
+        shortKeys: false,
+      },
+    });
+  });
+  jsonShortBtn.addEventListener("click", async () => {
+    await handleAction("copy", {
+      sourceButton: jsonShortBtn,
+      serializationOverrides: {
+        minifyJsonOutput: false,
+        shortKeys: true,
+      },
+    });
+  });
+  jsonMinShortBtn.addEventListener("click", async () => {
+    await handleAction("copy", {
+      sourceButton: jsonMinShortBtn,
+      serializationOverrides: {
+        minifyJsonOutput: true,
+        shortKeys: true,
+      },
+    });
+  });
   downloadBtn.addEventListener("click", (event) => {
     event.stopPropagation();
     handleAction("download");

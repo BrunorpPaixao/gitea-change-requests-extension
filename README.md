@@ -57,6 +57,7 @@ This branch refines the exporter contract to be stricter, leaner, and factual-on
    - **Ignore resolved changes** (on by default)
    - **Ignore outdated changes** (on by default)
    - **Ignore comments** (on by default; excludes standalone `.timeline-item.comment` entries)
+   - **Use shortened JSON keys** (on by default; compact agent export)
    - **Script stats** (off by default; adds `filtersApplied` and `stats` in JSON output)
    - **Debug** (off by default; shows the status/error panel at the bottom)
    - **Verbose diagnostics** (off by default; captures detailed skip decisions and performance metrics)
@@ -71,6 +72,8 @@ Popup settings are stored in `chrome.storage.local` and restored each time the p
 - Ignore where last comment is from user
 - Ignore resolved changes
 - Ignore outdated changes
+- Use shortened JSON keys
+- Minify JSON output
 - Script stats
 - Give AI Context
 - Debug
@@ -93,6 +96,84 @@ Diagnostics payload includes:
 - inclusion/skip counters
 - optional per-thread decision samples (when verbose diagnostics is enabled)
 - warning when runtime exceeds guardrail threshold
+
+## Compact Agent Export
+- `shortKeys` is a popup setting (`Use shortened JSON keys`) and is enabled by default.
+- This setting changes serialized key names only. It does not change extraction logic, values, ordering semantics, or factual-only behavior.
+- The canonical internal model remains the full-key schema; short keys are applied in a serializer adapter during export/copy output generation.
+- The current project has one settings surface (popup). There is no CLI flag in this codebase.
+
+### Short Key Mapping
+Top-level
+- `schemaVersion -> v`
+- `scope -> sc`
+- `source -> src`
+- `actors -> act`
+- `identityResolution -> idr`
+- `participants -> part`
+- `exportOptions -> opts`
+- `completeness -> comp`
+- `ordering -> ord`
+- `counts -> cnt`
+- `views -> vw`
+- `conversations -> th`
+- `exportFingerprint -> fp`
+
+Source
+- `host -> host`
+- `owner -> own`
+- `repo -> repo`
+- `prNumber -> pr`
+- `url -> url`
+- `title -> title`
+- `scrapedAt -> at`
+
+Actors / identity
+- `currentUser -> me`
+- `prAuthor -> pra`
+- `currentUserKnown -> mek`
+- `prAuthorKnown -> prak`
+
+Conversation / thread
+- `conversationId -> id`
+- `filePath -> file`
+- `threadUrl -> url`
+- `resolved -> res`
+- `outdated -> old`
+- `lineNew -> ln`
+- `lineOld -> lo`
+- `diffSide -> side`
+- `hunkHeader -> hunk`
+- `codeContext -> ctx`
+- `rootComment -> root`
+- `comments -> c`
+- `lastCommentId -> lid`
+- `lastCommentUrl -> lurl`
+- `lastCommentByOtherUser -> lboo`
+
+Code context
+- `lines -> l`
+
+Code context line
+- `type -> t`
+- `oldLine -> o`
+- `newLine -> n`
+- `marker -> m`
+- `text -> x`
+
+Comment
+- `id -> id`
+- `author -> a`
+- `datetime -> dt`
+- `text -> x`
+- `url -> url`
+- `displayName -> dn`
+
+Helper arrays / counters
+- `commentIdsInOrder -> cio`
+- `commentAuthorsInOrder -> cao`
+- `commentCount -> cc`
+- `hasReplies -> hr`
 
 ## Runtime Script Layout
 Popup logic is split into focused files under `popup/`:

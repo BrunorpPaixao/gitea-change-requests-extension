@@ -5,6 +5,9 @@
 function setBusy(isBusy) {
   document.body.classList.toggle("is-busy", Boolean(isBusy));
   copyBtn.disabled = isBusy;
+  jsonMinBtn.disabled = isBusy;
+  jsonShortBtn.disabled = isBusy;
+  jsonMinShortBtn.disabled = isBusy;
   downloadBtn.disabled = isBusy;
   downloadDiffBtn.disabled = isBusy;
   downloadBundleWrapper.classList.toggle("is-disabled", isBusy);
@@ -16,6 +19,7 @@ function setBusy(isBusy) {
   ignoreResolvedCheckbox.disabled = isBusy;
   ignoreOutdatedCheckbox.disabled = isBusy;
   ignoreCommentsCheckbox.disabled = isBusy;
+  shortKeysCheckbox.disabled = isBusy;
   minifyJsonCheckbox.disabled = isBusy;
   includeScriptStatsCheckbox.disabled = isBusy;
   giveAiContextCheckbox.disabled = isBusy;

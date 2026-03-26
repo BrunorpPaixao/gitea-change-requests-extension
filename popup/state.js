@@ -3,6 +3,9 @@
  * Defines DOM references, static config, and shared mutable flags used across popup modules.
  */
 const copyBtn = document.getElementById("copyBtn");
+const jsonMinBtn = document.getElementById("jsonMinBtn");
+const jsonShortBtn = document.getElementById("jsonShortBtn");
+const jsonMinShortBtn = document.getElementById("jsonMinShortBtn");
 const downloadBtn = document.getElementById("downloadBtn");
 const downloadDiffBtn = document.getElementById("downloadDiffBtn");
 const downloadBundleWrapper = document.getElementById("downloadBundleWrapper");
@@ -15,11 +18,13 @@ const statusEl = document.getElementById("status");
 const errorEl = document.getElementById("error");
 const feedbackPanel = document.getElementById("feedbackPanel");
 const headerContextEl = document.getElementById("headerContext");
+const jiraLinksRow = document.getElementById("jiraLinksRow");
 const userNameInput = document.getElementById("userNameInput");
 const ignoreLastCommentCheckbox = document.getElementById("ignoreLastCommentCheckbox");
 const ignoreResolvedCheckbox = document.getElementById("ignoreResolvedCheckbox");
 const ignoreOutdatedCheckbox = document.getElementById("ignoreOutdatedCheckbox");
 const ignoreCommentsCheckbox = document.getElementById("ignoreCommentsCheckbox");
+const shortKeysCheckbox = document.getElementById("shortKeysCheckbox");
 const minifyJsonCheckbox = document.getElementById("minifyJsonCheckbox");
 const includeScriptStatsCheckbox = document.getElementById("includeScriptStatsCheckbox");
 const giveAiContextCheckbox = document.getElementById("giveAiContextCheckbox");
@@ -47,6 +52,7 @@ const DEFAULT_POPUP_SETTINGS = {
   ignoreResolvedChanges: true,
   ignoreOutdatedChanges: true,
   ignoreComments: true,
+  shortKeys: true,
   minifyJsonOutput: false,
   includeScriptStats: false,
   giveAiContext: false,
@@ -56,6 +62,9 @@ const DEFAULT_POPUP_SETTINGS = {
 
 const REQUIRED_UI_ELEMENTS = [
   ["copyBtn", copyBtn],
+  ["jsonMinBtn", jsonMinBtn],
+  ["jsonShortBtn", jsonShortBtn],
+  ["jsonMinShortBtn", jsonMinShortBtn],
   ["downloadBtn", downloadBtn],
   ["downloadDiffBtn", downloadDiffBtn],
   ["downloadBundleWrapper", downloadBundleWrapper],
@@ -66,11 +75,13 @@ const REQUIRED_UI_ELEMENTS = [
   ["errorEl", errorEl],
   ["feedbackPanel", feedbackPanel],
   ["headerContextEl", headerContextEl],
+  ["jiraLinksRow", jiraLinksRow],
   ["userNameInput", userNameInput],
   ["ignoreLastCommentCheckbox", ignoreLastCommentCheckbox],
   ["ignoreResolvedCheckbox", ignoreResolvedCheckbox],
   ["ignoreOutdatedCheckbox", ignoreOutdatedCheckbox],
   ["ignoreCommentsCheckbox", ignoreCommentsCheckbox],
+  ["shortKeysCheckbox", shortKeysCheckbox],
   ["minifyJsonCheckbox", minifyJsonCheckbox],
   ["includeScriptStatsCheckbox", includeScriptStatsCheckbox],
   ["giveAiContextCheckbox", giveAiContextCheckbox],
