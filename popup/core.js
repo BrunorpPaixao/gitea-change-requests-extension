@@ -129,7 +129,10 @@ async function buildExportData() {
   const conversations = Array.isArray(exportPayload.conversations) ? exportPayload.conversations : [];
   summaryEl.textContent = `Conversations found: ${conversations.length}`;
   const giveAiContext = Boolean(giveAiContextCheckbox?.checked);
-  const outputText = giveAiContext ? buildAiContextText(exportPayload) : JSON.stringify(exportPayload, null, 2);
+  const minifyJsonOutput = Boolean(minifyJsonCheckbox?.checked);
+  const outputText = giveAiContext
+    ? buildAiContextText(exportPayload, { minifyJsonOutput })
+    : JSON.stringify(exportPayload, null, minifyJsonOutput ? 0 : 2);
   const filename = giveAiContext
     ? buildAiContextFilename(tab.url || "", tab.title || "")
     : buildFilename(tab.url || "", tab.title || "");

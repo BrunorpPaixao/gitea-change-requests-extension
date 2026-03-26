@@ -299,6 +299,23 @@ h1 {
   color: color-mix(in srgb, var(--fg) 88%, var(--primary) 12%);
 }
 
+.check-row .option-tip {
+  margin-left: auto;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--fg) 78%, var(--primary) 22%);
+  background: var(--bg-soft);
+  line-height: 1;
+  cursor: help;
+}
+
 .check-row.is-toggled {
   animation: check-row-flash 260ms var(--ease-out-quart);
 }
