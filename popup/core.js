@@ -185,6 +185,7 @@ async function handleTestSelection() {
         ignoreWhereLastCommentIsFromUser: ignoreLastCommentCheckbox.checked,
         ignoreResolvedChanges: ignoreResolvedCheckbox.checked,
         ignoreOutdatedChanges: ignoreOutdatedCheckbox.checked,
+        ignoreComments: ignoreCommentsCheckbox.checked,
         verboseDiagnostics: verboseDiagnosticsCheckbox.checked,
       },
     });
@@ -207,9 +208,12 @@ async function handleTestSelection() {
       if (ignoreOutdatedCheckbox.checked) {
         filteringHints.push("outdated ignored");
       }
+      if (ignoreCommentsCheckbox.checked) {
+        filteringHints.push("comments ignored");
+      }
       const hintText = filteringHints.length ? ` Active filters: ${filteringHints.join(", ")}.` : "";
       setStatus(
-        `Highlighted ${count} selected/exported conversations. Skipped resolved: ${stats.skippedResolved}, outdated: ${stats.skippedOutdated}, last-comment-user: ${stats.skippedLastCommentByUser}. Last-comment-user total: ${stats.lastCommentByUserTotal} (resolved: ${stats.lastCommentByUserSkippedResolved}, outdated: ${stats.lastCommentByUserSkippedOutdated}).${hintText}`
+        `Highlighted ${count} selected/exported items. Skipped resolved: ${stats.skippedResolved}, outdated: ${stats.skippedOutdated}, comments: ${stats.skippedComments}, last-comment-user: ${stats.skippedLastCommentByUser}. Last-comment-user total: ${stats.lastCommentByUserTotal} (resolved: ${stats.lastCommentByUserSkippedResolved}, outdated: ${stats.lastCommentByUserSkippedOutdated}).${hintText}`
       );
     } else {
       setStatus(`Highlighted ${count} conversations on the page.`);
@@ -245,6 +249,7 @@ async function handleTestHighlights() {
         ignoreWhereLastCommentIsFromUser: ignoreLastCommentCheckbox.checked,
         ignoreResolvedChanges: ignoreResolvedCheckbox.checked,
         ignoreOutdatedChanges: ignoreOutdatedCheckbox.checked,
+        ignoreComments: ignoreCommentsCheckbox.checked,
         verboseDiagnostics: verboseDiagnosticsCheckbox.checked,
       },
     });
@@ -258,9 +263,9 @@ async function handleTestHighlights() {
     markDiagnosticsReadyCue();
     triggerActionPulse(testHighlightsBtn);
     showSuccessBadge(testHighlightsBtn, "Done");
-    summaryEl.textContent = `Conversations found: ${selectedCount}`;
+    summaryEl.textContent = `Items found: ${selectedCount}`;
     setStatus(
-      `Highlighted all ${totalBlocks} conversations by state. Numbered ${selectedCount} selected/exported conversations. Colors: green=unresolved/current, blue=resolved, amber=outdated, split=resolved+outdated.`
+      `Highlighted all ${totalBlocks} items by state. Numbered ${selectedCount} selected/exported items. Colors: green=unresolved/current, blue=resolved, amber=outdated, split=resolved+outdated, pink=comments.`
     );
   } catch (error) {
     setStatus("");

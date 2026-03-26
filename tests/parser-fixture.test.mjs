@@ -10,6 +10,33 @@ import { createContentHarness } from "./helpers/run-content-script.mjs";
 const standardHtml = readFileSync(new URL("./fixtures/pr-standard.html", import.meta.url), "utf8");
 const variantHtml = readFileSync(new URL("./fixtures/pr-variant.html", import.meta.url), "utf8");
 const participantsHtml = readFileSync(new URL("./fixtures/pr-participants.html", import.meta.url), "utf8");
+const standaloneCommentHtml = `
+<!doctype html>
+<html>
+  <head><title>#42 - Sample - Git</title></head>
+  <body data-signed-user-name="alice">
+    <div id="pull-desc-display" class="pull-desc">alice wants to merge feature into main</div>
+    <div class="ui segments conversation-holder" id="conv-1">
+      <input name="path" value="src/main.js" />
+      <input name="line" value="10" />
+      <a class="file-comment" href="/acme/sample-repo/pulls/42/files#issuecomment-1001">src/main.js</a>
+      <button data-action="Resolve" data-comment-id="1001">Resolve conversation</button>
+      <div class="timeline-item comment" id="comment-1001" data-comment-id="1001">
+        <a class="author" href="/bob">bob</a>
+        <time datetime="2026-01-10T10:00:00.000Z">Jan 10, 2026</time>
+        <div class="raw-content">Please rename this variable.</div>
+      </div>
+    </div>
+    <div class="timeline-item comment" id="comment-9001" data-comment-id="9001">
+      <div class="content comment-container">
+        <a class="author" href="/reviewer">reviewer</a>
+        <time datetime="2026-01-11T11:00:00.000Z">Jan 11, 2026</time>
+        <div class="raw-content">Top-level comment outside conversation block.</div>
+      </div>
+    </div>
+  </body>
+</html>
+`;
 const selectionReasonValues = new Set([
   "included_by_default",
   "included_resolved",
@@ -253,6 +280,67 @@ test("variant fixture normalizes newline escapes in comment text", async () => {
   }
 });
 
+test("standalone timeline comments are exported when comment filtering is disabled", async () => {
+  const harness = createContentHarness({
+    html: standaloneCommentHtml,
+    url: "https://git.example.com/acme/sample-repo/pulls/42",
+  });
+
+  try {
+    const ignored = await harness.send({
+      type: "SCRAPE_UNRESOLVED_CONVERSATIONS",
+      options: {
+        userName: "alice",
+        ignoreWhereLastCommentIsFromUser: false,
+        ignoreResolvedChanges: false,
+        ignoreOutdatedChanges: false,
+        ignoreComments: true,
+        includeScriptStats: true,
+        verboseDiagnostics: false,
+      },
+    });
+
+    assert.equal(ignored.ok, true);
+    assert.equal(ignored.result.conversations.length, 1);
+    assert.equal(ignored.result.exportOptions.ignoreComments, true);
+    assert.equal(ignored.result.counts.conversationCount, 1);
+    assert.equal(ignored.result.counts.unresolvedCount, 1);
+
+    const included = await harness.send({
+      type: "SCRAPE_UNRESOLVED_CONVERSATIONS",
+      options: {
+        userName: "alice",
+        ignoreWhereLastCommentIsFromUser: false,
+        ignoreResolvedChanges: false,
+        ignoreOutdatedChanges: false,
+        ignoreComments: false,
+        includeScriptStats: true,
+        verboseDiagnostics: false,
+      },
+    });
+
+    assert.equal(included.ok, true);
+    assert.equal(included.result.conversations.length, 2);
+    assert.equal(included.result.exportOptions.ignoreComments, false);
+    assert.equal(included.result.counts.conversationCount, 2);
+    assert.equal(included.result.views.allConversationIds.join(","), "1001,9001");
+    assert.equal(included.result.views.byFile["src/main.js"].join(","), "1001");
+    assert.equal(included.result.views.byFile[""].join(","), "9001");
+
+    const standalone = included.result.conversations.find((item) => item.conversationId === "9001");
+    assert.ok(standalone);
+    assert.equal(standalone.filePath, null);
+    assert.equal(standalone.resolved, false);
+    assert.equal(standalone.outdated, false);
+    assert.equal(standalone.commentCount, 1);
+    assert.equal(standalone.selectionReason, "included_by_default");
+    assert.equal(standalone.rootComment.id, "9001");
+    assert.equal(standalone.rootComment.author, "reviewer");
+  } finally {
+    harness.dispose();
+  }
+});
+
 test("participant sections are extracted as factual identities", async () => {
   const harness = createContentHarness({
     html: participantsHtml,
@@ -368,15 +456,17 @@ test("single-conversation current user resolution uses popup settings first, the
       "source",
       "actors",
       "identityResolution",
-      "participants",
-      "exportOptions",
-      "completeness",
-      "ordering",
-      "counts",
-      "views",
       "conversations",
       "exportFingerprint",
     ]);
+    assert.equal("participants" in envelope, false);
+    assert.equal("exportOptions" in envelope, false);
+    assert.equal("completeness" in envelope, false);
+    assert.equal("ordering" in envelope, false);
+    assert.equal("counts" in envelope, false);
+    assert.equal("views" in envelope, false);
+    assert.equal("commentIdsInOrder" in envelope.conversations[0], false);
+    assert.equal("commentAuthorsInOrder" in envelope.conversations[0], false);
     assert.equal(envelope.actors.currentUser.username, "storeduser");
     assert.equal(envelope.conversations[0].lastCommentAuthorIsCurrentUser, false);
     assert.equal(envelope.conversations[0].lastCommentByOtherUser, true);

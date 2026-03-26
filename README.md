@@ -27,6 +27,9 @@ This branch refines the exporter contract to be stricter, leaner, and factual-on
   - `views.unresolvedLastCommentByOtherUserNewestFirst`
   - `views.byFile`
   - `commentIdsInOrder` / `commentAuthorsInOrder`
+- Single-conversation export is intentionally lean:
+  - keeps only `schemaVersion`, `scope`, `source`, `actors`, `identityResolution`, `conversations`, `exportFingerprint`
+  - omits top-level aggregation blocks and conversation-level ordering duplication arrays
 - `selectionReason` is stable and documented:
   - `included_by_default`
   - `included_resolved`
@@ -53,6 +56,7 @@ This branch refines the exporter contract to be stricter, leaner, and factual-on
    - **Ignore where last comment is from user**
    - **Ignore resolved changes** (on by default)
    - **Ignore outdated changes** (on by default)
+   - **Ignore comments** (on by default; excludes standalone `.timeline-item.comment` entries)
    - **Script stats** (off by default; adds `filtersApplied` and `stats` in JSON output)
    - **Debug** (off by default; shows the status/error panel at the bottom)
    - **Verbose diagnostics** (off by default; captures detailed skip decisions and performance metrics)
@@ -155,6 +159,7 @@ By default, `filtersApplied` and `stats` are omitted unless **Script stats** is 
     "debug": false,
     "gitUserName": "author_b",
     "ignoreLastCommentByUser": false,
+    "ignoreComments": true,
     "ignoreOutdated": true,
     "ignoreResolved": true,
     "scriptStats": false,
@@ -252,20 +257,22 @@ By default, `filtersApplied` and `stats` are omitted unless **Script stats** is 
 - `identityResolution`: explicit identity reliability flags for downstream consumers.
 - `participants`: factual participant sets scraped from page sections and comment authors.
   `pageParticipants` comes from the PR sidebar section whose heading matches `participants` (DOM heading text match). It only means “listed in that page section”; it does not imply reviewer or comment-author semantics.
-- `exportOptions`: Effective export filters/options, always included.
-- `completeness`: Export coverage and parse-warning indicators.
-- `ordering`: deterministic ordering contract used by this export.
-- `counts`: deterministic factual counters derived from exported conversations.
+- `exportOptions`: Effective export filters/options for `scope.type = "pull_request"`; omitted for `single_conversation`.
+- `completeness`: Export coverage and parse-warning indicators for `pull_request`; omitted for `single_conversation`.
+- `ordering`: deterministic ordering contract for `pull_request`; omitted for `single_conversation`.
+- `counts`: deterministic factual counters for `pull_request`; omitted for `single_conversation`.
 - `exportFingerprint`: Stable fingerprint for incremental agent workflows.
 - `conversations`: Exported thread objects.
-- `views`: deterministic pre-filtered conversation-id arrays.
+- `views`: deterministic pre-filtered conversation-id arrays for `pull_request`; omitted for `single_conversation`.
   Includes `unresolvedLastCommentByOtherUserNewestFirst` and `byFile`.
 - `filtersApplied`: Included only when **Script stats** is enabled.
 - `stats`: Included only when **Script stats** is enabled.
 
 ### Property Ordering Contract
-- Top-level export object order: `schemaVersion`, `scope`, `source`, `actors`, `identityResolution`, `participants`, `exportOptions`, `completeness`, `ordering`, `counts`, `views`, `conversations`, then additional optional top-level fields.
-- Conversation object order: `conversationId`, `filePath`, `threadUrl`, `resolved`, `outdated`, `selectionReason`, `lineNew`, `lineOld`, `diffSide`, `hunkHeader`, `codeContext`, `rootComment`, `comments`, `commentIdsInOrder`, `commentAuthorsInOrder`, `commentCount`, `hasReplies`, `lastCommentId`, `lastCommentAuthor`, `lastCommentAuthorIsCurrentUser`, `lastCommentAuthorIsPrAuthor`, `lastCommentAt`, `lastCommentUrl`, `lastCommentByOtherUser`, then additional optional fields.
+- Top-level export object order (`pull_request`): `schemaVersion`, `scope`, `source`, `actors`, `identityResolution`, `participants`, `exportOptions`, `completeness`, `ordering`, `counts`, `views`, `conversations`, then additional optional top-level fields.
+- Top-level export object order (`single_conversation`): `schemaVersion`, `scope`, `source`, `actors`, `identityResolution`, `conversations`, `exportFingerprint`.
+- Conversation object order (`pull_request`): `conversationId`, `filePath`, `threadUrl`, `resolved`, `outdated`, `selectionReason`, `lineNew`, `lineOld`, `diffSide`, `hunkHeader`, `codeContext`, `rootComment`, `comments`, `commentIdsInOrder`, `commentAuthorsInOrder`, `commentCount`, `hasReplies`, `lastCommentId`, `lastCommentAuthor`, `lastCommentAuthorIsCurrentUser`, `lastCommentAuthorIsPrAuthor`, `lastCommentAt`, `lastCommentUrl`, `lastCommentByOtherUser`, then additional optional fields.
+- Conversation object order (`single_conversation`): same shape, but omits `commentIdsInOrder` and `commentAuthorsInOrder`.
 - Comment objects (`rootComment`, `comments[]`) are key-sorted alphabetically.
 - `codeContext` object order is `hunkHeader`, then `lines`; each line entry order is `type`, `oldLine`, `newLine`, `marker`, `text`.
 
@@ -284,18 +291,16 @@ By default, `filtersApplied` and `stats` are omitted unless **Script stats** is 
 - `resolved`: Derived from resolve/unresolve controls and thread status.
 - `commentCount`: Total number of comments in the thread (`rootComment` + `comments`).
 - `hasReplies`: whether there are follow-up comments after root comment.
-- `commentIdsInOrder` / `commentAuthorsInOrder`: chronological root+reply timeline arrays aligned by position.
+- `commentIdsInOrder` / `commentAuthorsInOrder`: chronological root+reply timeline arrays aligned by position (included for `pull_request`, omitted for `single_conversation`).
 - `lastComment*`: compact factual fields computed from ordered comments.
 - `lastCommentByOtherUser`: strict identity check against `actors.currentUser.username`.
 - `selectionReason`: inclusion reason for downstream auditing.
   Allowed values: `included_by_default`, `included_resolved`, `included_outdated`, `included_last_comment_by_current_user`.
 
 ### Ordering Guarantees
-- `views.allConversationIds`, `views.resolved`, `views.unresolved`, `views.outdated`, `views.notOutdated`, `views.lastCommentByCurrentUser`, `views.lastCommentByOtherUser`, `views.unresolvedLastCommentByOtherUser`: preserve exported conversation order (`ordering.conversations = page_dom_order`).
-- `views.unresolvedLastCommentByOtherUserNewestFirst`: sorted by `lastCommentAt` descending; ties are sorted by conversation id ascending.
-- `views.byFile.<filePath>[]`: preserves exported conversation order within each file group.
-- `commentIdsInOrder`: chronological ascending (`ordering.comments`), root+replies timeline.
-- `commentAuthorsInOrder`: same ordering as `commentIdsInOrder` (index-aligned arrays).
+- `views.*` guarantees apply to `pull_request` exports (single-conversation exports omit `views`).
+- `views.byFile.<filePath>[]` preserves exported conversation order within each file group for `pull_request`.
+- `commentIdsInOrder` / `commentAuthorsInOrder` guarantees apply to `pull_request` exports (single-conversation exports omit both fields).
 
 ### Factual-Only Contract
 - Exporter output is limited to raw scraped values and deterministic facts.

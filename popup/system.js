@@ -68,6 +68,7 @@ async function runScrape() {
       ignoreWhereLastCommentIsFromUser: ignoreLastCommentCheckbox.checked,
       ignoreResolvedChanges: ignoreResolvedCheckbox.checked,
       ignoreOutdatedChanges: ignoreOutdatedCheckbox.checked,
+      ignoreComments: ignoreCommentsCheckbox.checked,
       includeScriptStats: includeScriptStatsCheckbox.checked,
       debug: debugCheckbox.checked,
       verboseDiagnostics: verboseDiagnosticsCheckbox.checked,
@@ -357,6 +358,7 @@ function bindSettingsPersistence() {
   ignoreLastCommentCheckbox.addEventListener("change", saveOnChange);
   ignoreResolvedCheckbox.addEventListener("change", saveOnChange);
   ignoreOutdatedCheckbox.addEventListener("change", saveOnChange);
+  ignoreCommentsCheckbox.addEventListener("change", saveOnChange);
   includeScriptStatsCheckbox.addEventListener("change", saveOnChange);
   giveAiContextCheckbox.addEventListener("change", saveOnChange);
   debugCheckbox.addEventListener("change", saveOnChange);
@@ -369,6 +371,7 @@ function readPopupSettingsFromUi() {
     ignoreWhereLastCommentIsFromUser: ignoreLastCommentCheckbox.checked,
     ignoreResolvedChanges: ignoreResolvedCheckbox.checked,
     ignoreOutdatedChanges: ignoreOutdatedCheckbox.checked,
+    ignoreComments: ignoreCommentsCheckbox.checked,
     includeScriptStats: includeScriptStatsCheckbox.checked,
     giveAiContext: giveAiContextCheckbox.checked,
     debug: debugCheckbox.checked,
@@ -382,6 +385,7 @@ function applyPopupSettings(settings) {
   ignoreLastCommentCheckbox.checked = Boolean(next.ignoreWhereLastCommentIsFromUser);
   ignoreResolvedCheckbox.checked = Boolean(next.ignoreResolvedChanges);
   ignoreOutdatedCheckbox.checked = Boolean(next.ignoreOutdatedChanges);
+  ignoreCommentsCheckbox.checked = Boolean(next.ignoreComments);
   includeScriptStatsCheckbox.checked = Boolean(next.includeScriptStats);
   giveAiContextCheckbox.checked = Boolean(next.giveAiContext);
   debugCheckbox.checked = Boolean(next.debug);
@@ -421,6 +425,9 @@ function updateActiveFiltersSummary() {
   }
   if (ignoreLastCommentCheckbox.checked) {
     active.push("last-comment user ignored");
+  }
+  if (ignoreCommentsCheckbox.checked) {
+    active.push("comments ignored");
   }
   if (includeScriptStatsCheckbox.checked) {
     active.push("script stats");

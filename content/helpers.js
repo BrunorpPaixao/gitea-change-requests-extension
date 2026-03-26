@@ -60,36 +60,64 @@
     ensureHighlightStyles();
 
     const selectedSet = new Set(selectedBlocks || []);
-    let selectedIndex = 0;
+    const selectedIndexByType = new Map();
 
     (allBlocks || []).forEach((block) => {
-      block.classList.add("gpre-highlighted-conversation");
-      block.setAttribute("data-gpre-highlighted", "1");
+      const isStandaloneComment = isStandaloneTimelineComment(block);
+      const highlightTarget = resolveHighlightTarget(block, isStandaloneComment);
+      const wrapperTarget = isStandaloneComment ? block : null;
+
+      highlightTarget.classList.add("gpre-highlighted-conversation");
+      highlightTarget.setAttribute("data-gpre-highlighted", "1");
+      if (wrapperTarget) {
+        wrapperTarget.classList.add("gpre-highlight-comment-wrapper");
+        wrapperTarget.setAttribute("data-gpre-highlight-wrapper", "1");
+      }
 
       const resolution = getConversationResolution(block);
       const outdated = isOutdatedConversation(block);
       const isSelected = selectedSet.has(block);
 
       if (resolution === "resolved") {
-        block.classList.add("gpre-highlight-resolved");
-        block.setAttribute("data-gpre-resolved", "1");
+        highlightTarget.classList.add("gpre-highlight-resolved");
+        highlightTarget.setAttribute("data-gpre-resolved", "1");
+        if (wrapperTarget) {
+          wrapperTarget.classList.add("gpre-highlight-resolved");
+        }
       } else if (resolution === "unresolved" && !outdated) {
-        block.classList.add("gpre-highlight-unresolved");
-        block.setAttribute("data-gpre-unresolved", "1");
+        highlightTarget.classList.add("gpre-highlight-unresolved");
+        highlightTarget.setAttribute("data-gpre-unresolved", "1");
+        if (wrapperTarget) {
+          wrapperTarget.classList.add("gpre-highlight-unresolved");
+        }
       }
       if (outdated) {
-        block.classList.add("gpre-highlight-outdated");
-        block.setAttribute("data-gpre-outdated", "1");
+        highlightTarget.classList.add("gpre-highlight-outdated");
+        highlightTarget.setAttribute("data-gpre-outdated", "1");
+        if (wrapperTarget) {
+          wrapperTarget.classList.add("gpre-highlight-outdated");
+        }
+      }
+      if (isStandaloneComment) {
+        highlightTarget.classList.add("gpre-highlight-comment");
+        highlightTarget.setAttribute("data-gpre-comment", "1");
+        if (wrapperTarget) {
+          wrapperTarget.classList.add("gpre-highlight-comment");
+        }
       }
       if (isSelected) {
-        block.classList.add("gpre-highlight-selected");
-        block.setAttribute("data-gpre-selected", "1");
+        highlightTarget.classList.add("gpre-highlight-selected");
+        highlightTarget.setAttribute("data-gpre-selected", "1");
+        if (wrapperTarget) {
+          wrapperTarget.classList.add("gpre-highlight-selected");
+        }
       }
 
       if (isSelected) {
         const badge = document.createElement("div");
         badge.className = "gpre-highlight-badge";
         badge.setAttribute("data-gpre-highlight-badge", "1");
+        const typeKey = resolveHighlightTypeKey({ resolution, outdated, isStandaloneComment });
         if (resolution === "resolved") {
           badge.classList.add("gpre-badge-resolved");
         } else if (resolution === "unresolved" && !outdated) {
@@ -98,11 +126,42 @@
         if (outdated) {
           badge.classList.add("gpre-badge-outdated");
         }
-        selectedIndex += 1;
-        badge.textContent = String(selectedIndex);
-        block.prepend(badge);
+        if (isStandaloneComment) {
+          badge.classList.add("gpre-badge-comment");
+        }
+        const nextForType = Number(selectedIndexByType.get(typeKey) || 0) + 1;
+        selectedIndexByType.set(typeKey, nextForType);
+        badge.textContent = String(nextForType);
+        const badgeHost = isStandaloneComment ? block : highlightTarget;
+        badgeHost.prepend(badge);
       }
     });
+  }
+
+  function resolveHighlightTarget(block, isStandaloneComment) {
+    if (!isStandaloneComment) {
+      return block;
+    }
+    return block.querySelector(".content.comment-container") || block;
+  }
+
+  function resolveHighlightTypeKey({ resolution, outdated, isStandaloneComment }) {
+    if (isStandaloneComment) {
+      return "comment";
+    }
+    if (resolution === "resolved" && outdated) {
+      return "resolved_outdated";
+    }
+    if (resolution === "resolved") {
+      return "resolved";
+    }
+    if (outdated) {
+      return "outdated";
+    }
+    if (resolution === "unresolved") {
+      return "unresolved";
+    }
+    return "other";
   }
 
   function clearSelectionHighlights() {
@@ -114,13 +173,42 @@
       block.classList.remove("gpre-highlight-resolved");
       block.classList.remove("gpre-highlight-unresolved");
       block.classList.remove("gpre-highlight-outdated");
+      block.classList.remove("gpre-highlight-comment");
       block.classList.remove("gpre-highlight-selected");
       block.removeAttribute("data-gpre-highlighted");
       block.removeAttribute("data-gpre-resolved");
       block.removeAttribute("data-gpre-unresolved");
       block.removeAttribute("data-gpre-outdated");
+      block.removeAttribute("data-gpre-comment");
       block.removeAttribute("data-gpre-selected");
     }
+    for (const wrapper of document.querySelectorAll("[data-gpre-highlight-wrapper='1']")) {
+      wrapper.classList.remove("gpre-highlight-comment-wrapper");
+      wrapper.classList.remove("gpre-highlight-resolved");
+      wrapper.classList.remove("gpre-highlight-unresolved");
+      wrapper.classList.remove("gpre-highlight-outdated");
+      wrapper.classList.remove("gpre-highlight-comment");
+      wrapper.classList.remove("gpre-highlight-selected");
+      wrapper.removeAttribute("data-gpre-highlight-wrapper");
+    }
+  }
+
+  function isStandaloneTimelineComment(block) {
+    if (!(block instanceof Element)) {
+      return false;
+    }
+    if (!block.matches(".timeline-item.comment")) {
+      return false;
+    }
+    if (block.closest(".ui.segments.conversation-holder")) {
+      return false;
+    }
+    if (block.matches(".form, .pull-merge-box")) {
+      return false;
+    }
+    const hasCommentContainer = block.querySelector(".content.comment-container");
+    const hasCommentText = block.querySelector(".raw-content, .render-content");
+    return Boolean(hasCommentContainer && hasCommentText);
   }
 
   function ensureHighlightStyles() {
@@ -134,43 +222,62 @@
     style.textContent = `
       .gpre-highlighted-conversation {
         position: relative !important;
-        outline: 2px dashed rgba(120, 131, 145, 0.65) !important;
-        box-shadow: inset 2px 0 0 rgba(120, 131, 145, 0.65) !important;
         border-radius: 8px !important;
+        background: transparent !important;
+        box-shadow: inset 0 0 0 3px #788391 !important;
       }
       .gpre-highlighted-conversation.gpre-highlight-selected {
-        outline-style: solid !important;
+        box-shadow: inset 0 0 0 4px #4e5868 !important;
+        border-radius: 8px !important;
       }
       .gpre-highlighted-conversation.gpre-highlight-unresolved {
-        outline-color: #2fb170 !important;
+        background: transparent !important;
         box-shadow:
-          0 0 0 3px rgba(47, 177, 112, 0.2),
-          inset 4px 0 0 rgba(47, 177, 112, 0.95) !important;
+          inset 0 0 0 4px #2fb170,
+          0 0 0 2px #2fb170 !important;
       }
       .gpre-highlighted-conversation.gpre-highlight-resolved {
-        outline-color: #3f83f8 !important;
+        background: transparent !important;
         box-shadow:
-          0 0 0 3px rgba(63, 131, 248, 0.22),
-          inset 4px 0 0 rgba(63, 131, 248, 0.95) !important;
+          inset 0 0 0 4px #3f83f8,
+          0 0 0 2px #3f83f8 !important;
       }
       .gpre-highlighted-conversation.gpre-highlight-outdated {
-        outline-color: #f59e0b !important;
+        background: transparent !important;
         box-shadow:
-          0 0 0 3px rgba(245, 158, 11, 0.24),
-          inset 4px 0 0 rgba(245, 158, 11, 0.95) !important;
+          inset 0 0 0 4px #f59e0b,
+          0 0 0 2px #f59e0b !important;
       }
       .gpre-highlighted-conversation.gpre-highlight-resolved.gpre-highlight-outdated {
-        outline-color: #f59e0b !important;
+        background: transparent !important;
         box-shadow:
-          0 0 0 3px rgba(245, 158, 11, 0.24),
-          0 0 0 6px rgba(63, 131, 248, 0.2),
-          inset 4px 0 0 rgba(245, 158, 11, 0.95),
-          inset 10px 0 0 rgba(63, 131, 248, 0.95) !important;
+          inset 0 0 0 3px #f59e0b,
+          inset 0 0 0 6px #3f83f8,
+          0 0 0 2px #f59e0b,
+          0 0 0 4px #3f83f8 !important;
+      }
+      .gpre-highlighted-conversation.gpre-highlight-comment {
+        background: transparent !important;
+        box-shadow: none !important;
+        border: 4px solid #ec4899 !important;
+      }
+      .content.comment-container.gpre-highlighted-conversation.gpre-highlight-comment {
+        display: block !important;
+        border-radius: 8px !important;
+      }
+      .content.comment-container.gpre-highlighted-conversation.gpre-highlight-comment .comment-header,
+      .content.comment-container.gpre-highlighted-conversation.gpre-highlight-comment .comment-body {
+        background: transparent !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+      }
+      .gpre-highlight-comment-wrapper {
+        position: relative !important;
       }
       .gpre-highlight-badge {
         position: absolute !important;
         top: -10px !important;
-        left: -10px !important;
+        right: -10px !important;
         min-width: 22px !important;
         height: 22px !important;
         border-radius: 999px !important;
@@ -196,6 +303,25 @@
       .gpre-highlight-badge.gpre-badge-resolved.gpre-badge-outdated {
         background:
           linear-gradient(135deg, #f59e0b 0%, #f59e0b 50%, #3f83f8 50%, #3f83f8 100%) !important;
+      }
+      .gpre-highlight-badge.gpre-badge-comment {
+        background: #ec4899 !important;
+      }
+      .gpre-highlight-comment-wrapper.gpre-highlight-unresolved .avatar-content-left-arrow:before,
+      .gpre-highlight-comment-wrapper.gpre-highlight-unresolved .avatar-content-left-arrow:after {
+        filter: drop-shadow(-3px 0 0 #2fb170) drop-shadow(0 -1px 0 #2fb170) drop-shadow(0 1px 0 #2fb170) !important;
+      }
+      .gpre-highlight-comment-wrapper.gpre-highlight-resolved .avatar-content-left-arrow:before,
+      .gpre-highlight-comment-wrapper.gpre-highlight-resolved .avatar-content-left-arrow:after {
+        filter: drop-shadow(-3px 0 0 #3f83f8) drop-shadow(0 -1px 0 #3f83f8) drop-shadow(0 1px 0 #3f83f8) !important;
+      }
+      .gpre-highlight-comment-wrapper.gpre-highlight-outdated .avatar-content-left-arrow:before,
+      .gpre-highlight-comment-wrapper.gpre-highlight-outdated .avatar-content-left-arrow:after {
+        filter: drop-shadow(-3px 0 0 #f59e0b) drop-shadow(0 -1px 0 #f59e0b) drop-shadow(0 1px 0 #f59e0b) !important;
+      }
+      .gpre-highlight-comment-wrapper.gpre-highlight-comment .avatar-content-left-arrow:before,
+      .gpre-highlight-comment-wrapper.gpre-highlight-comment .avatar-content-left-arrow:after {
+        filter: drop-shadow(-3px 0 0 #ec4899) drop-shadow(0 -1px 0 #ec4899) drop-shadow(0 1px 0 #ec4899) !important;
       }
     `;
   }
@@ -286,6 +412,7 @@
           ignoreWhereLastCommentIsFromUser: false,
           ignoreResolvedChanges: false,
           ignoreOutdatedChanges: false,
+          ignoreComments: false,
           includeScriptStats: false,
         },
         {

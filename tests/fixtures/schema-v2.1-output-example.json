@@ -41,6 +41,7 @@
     "debug": false,
     "gitUserName": "author_b",
     "ignoreLastCommentByUser": false,
+    "ignoreComments": true,
     "ignoreOutdated": true,
     "ignoreResolved": true,
     "scriptStats": false,
