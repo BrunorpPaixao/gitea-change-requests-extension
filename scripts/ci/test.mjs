@@ -13,6 +13,7 @@ const requiredPopupIds = [
   "ignoreResolvedCheckbox",
   "ignoreOutdatedCheckbox",
   "ignoreCommentsCheckbox",
+  "minifyJsonCheckbox",
   "includeScriptStatsCheckbox",
   "giveAiContextCheckbox",
   "ignoreLastCommentCheckbox",

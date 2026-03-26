@@ -53,6 +53,15 @@
             <input id="ignoreCommentsCheckbox" type="checkbox" checked title="Exclude standalone timeline comments from exports and tests." />
             <span>Ignore comments</span>
           </label>
+          <label class="check-row" for="minifyJsonCheckbox" title="Emit compact JSON instead of pretty-printed JSON.">
+            <input id="minifyJsonCheckbox" type="checkbox" title="Emit compact JSON instead of pretty-printed JSON." />
+            <span>Minify JSON output</span>
+            <span
+              class="option-tip"
+              aria-label="Minifying JSON reduces characters and typically lowers token consumption."
+              title="Minifying JSON reduces characters and typically lowers token consumption."
+            >i</span>
+          </label>
           <label class="check-row" for="includeScriptStatsCheckbox" title="Include applied filters and statistics in the exported JSON.">
             <input id="includeScriptStatsCheckbox" type="checkbox" title="Include applied filters and statistics in the exported JSON." />
             <span>Script stats</span>

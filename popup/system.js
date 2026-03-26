@@ -82,8 +82,9 @@ async function runScrape() {
   return { tab, exportPayload: scrapeResponse.result || {} };
 }
 
-function buildAiContextText(exportPayload) {
-  const prettyJson = JSON.stringify(exportPayload, null, 2);
+function buildAiContextText(exportPayload, options = {}) {
+  const minifyJsonOutput = Boolean(options?.minifyJsonOutput);
+  const prettyJson = JSON.stringify(exportPayload, null, minifyJsonOutput ? 0 : 2);
 
   return [
     "# AI Task Context",
@@ -359,6 +360,7 @@ function bindSettingsPersistence() {
   ignoreResolvedCheckbox.addEventListener("change", saveOnChange);
   ignoreOutdatedCheckbox.addEventListener("change", saveOnChange);
   ignoreCommentsCheckbox.addEventListener("change", saveOnChange);
+  minifyJsonCheckbox.addEventListener("change", saveOnChange);
   includeScriptStatsCheckbox.addEventListener("change", saveOnChange);
   giveAiContextCheckbox.addEventListener("change", saveOnChange);
   debugCheckbox.addEventListener("change", saveOnChange);
@@ -372,6 +374,7 @@ function readPopupSettingsFromUi() {
     ignoreResolvedChanges: ignoreResolvedCheckbox.checked,
     ignoreOutdatedChanges: ignoreOutdatedCheckbox.checked,
     ignoreComments: ignoreCommentsCheckbox.checked,
+    minifyJsonOutput: minifyJsonCheckbox.checked,
     includeScriptStats: includeScriptStatsCheckbox.checked,
     giveAiContext: giveAiContextCheckbox.checked,
     debug: debugCheckbox.checked,
@@ -386,6 +389,7 @@ function applyPopupSettings(settings) {
   ignoreResolvedCheckbox.checked = Boolean(next.ignoreResolvedChanges);
   ignoreOutdatedCheckbox.checked = Boolean(next.ignoreOutdatedChanges);
   ignoreCommentsCheckbox.checked = Boolean(next.ignoreComments);
+  minifyJsonCheckbox.checked = Boolean(next.minifyJsonOutput);
   includeScriptStatsCheckbox.checked = Boolean(next.includeScriptStats);
   giveAiContextCheckbox.checked = Boolean(next.giveAiContext);
   debugCheckbox.checked = Boolean(next.debug);
@@ -428,6 +432,9 @@ function updateActiveFiltersSummary() {
   }
   if (ignoreCommentsCheckbox.checked) {
     active.push("comments ignored");
+  }
+  if (minifyJsonCheckbox.checked) {
+    active.push("json minified");
   }
   if (includeScriptStatsCheckbox.checked) {
     active.push("script stats");
