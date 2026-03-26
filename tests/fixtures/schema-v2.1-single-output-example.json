@@ -24,65 +24,6 @@
     "currentUserKnown": true,
     "prAuthorKnown": false
   },
-  "participants": {
-    "commentAuthors": [
-      "reviewer_a",
-      "author_b"
-    ],
-    "pageParticipants": [],
-    "reviewers": []
-  },
-  "exportOptions": {
-    "debug": false,
-    "gitUserName": "author_b",
-    "ignoreLastCommentByUser": false,
-    "ignoreOutdated": false,
-    "ignoreResolved": false,
-    "scriptStats": false,
-    "verboseDiagnostics": false
-  },
-  "completeness": {
-    "allThreadsLoaded": true,
-    "hiddenThreadsExpanded": true,
-    "outdatedSectionsExpanded": true,
-    "parseWarnings": []
-  },
-  "ordering": {
-    "comments": "chronological_ascending_with_dom_stable_fallback",
-    "conversations": "page_dom_order"
-  },
-  "counts": {
-    "commentDatetimeMissingCount": 0,
-    "conversationCount": 1,
-    "lastCommentByOtherUserCount": 0,
-    "outdatedCount": 0,
-    "resolvedCount": 0,
-    "unresolvedCount": 1
-  },
-  "views": {
-    "allConversationIds": [
-      "123456"
-    ],
-    "byFile": {
-      "backend/service/src/main/java/com/example/app/NotificationService.java": [
-        "123456"
-      ]
-    },
-    "lastCommentByCurrentUser": [
-      "123456"
-    ],
-    "lastCommentByOtherUser": [],
-    "notOutdated": [
-      "123456"
-    ],
-    "outdated": [],
-    "resolved": [],
-    "unresolved": [
-      "123456"
-    ],
-    "unresolvedLastCommentByOtherUser": [],
-    "unresolvedLastCommentByOtherUserNewestFirst": []
-  },
   "conversations": [
     {
       "conversationId": "123456",
@@ -108,14 +49,6 @@
           "id": "123499",
           "text": "Yes, moved to NotificationUtils and updated call sites."
         }
-      ],
-      "commentIdsInOrder": [
-        "123456",
-        "123499"
-      ],
-      "commentAuthorsInOrder": [
-        "reviewer_a",
-        "author_b"
       ],
       "commentCount": 2,
       "hasReplies": true,

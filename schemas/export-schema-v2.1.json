@@ -9,14 +9,8 @@
     "scope",
     "actors",
     "identityResolution",
-    "participants",
-    "exportOptions",
-    "completeness",
-    "ordering",
-    "counts",
     "exportFingerprint",
-    "conversations",
-    "views"
+    "conversations"
   ],
   "properties": {
     "schemaVersion": { "const": "2.1-factual" },
@@ -97,6 +91,7 @@
         "ignoreLastCommentByUser",
         "ignoreResolved",
         "ignoreOutdated",
+        "ignoreComments",
         "scriptStats",
         "debug",
         "verboseDiagnostics"
@@ -106,6 +101,7 @@
         "ignoreLastCommentByUser": { "type": "boolean" },
         "ignoreResolved": { "type": "boolean" },
         "ignoreOutdated": { "type": "boolean" },
+        "ignoreComments": { "type": "boolean" },
         "scriptStats": { "type": "boolean" },
         "debug": { "type": "boolean" },
         "verboseDiagnostics": { "type": "boolean" }
@@ -179,8 +175,6 @@
           "comments",
           "commentCount",
           "hasReplies",
-          "commentIdsInOrder",
-          "commentAuthorsInOrder",
           "lastCommentId",
           "lastCommentAuthor",
           "lastCommentAuthorIsCurrentUser",
@@ -302,6 +296,40 @@
     "filtersApplied": { "type": "object" },
     "stats": { "type": "object" }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "scope": {
+            "type": "object",
+            "properties": {
+              "type": { "const": "pull_request" }
+            }
+          }
+        },
+        "required": ["scope"]
+      },
+      "then": {
+        "required": [
+          "participants",
+          "exportOptions",
+          "completeness",
+          "ordering",
+          "counts",
+          "views"
+        ],
+        "properties": {
+          "conversations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["commentIdsInOrder", "commentAuthorsInOrder"]
+            }
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "idArray": {
       "type": "array",

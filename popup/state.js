@@ -19,6 +19,7 @@ const userNameInput = document.getElementById("userNameInput");
 const ignoreLastCommentCheckbox = document.getElementById("ignoreLastCommentCheckbox");
 const ignoreResolvedCheckbox = document.getElementById("ignoreResolvedCheckbox");
 const ignoreOutdatedCheckbox = document.getElementById("ignoreOutdatedCheckbox");
+const ignoreCommentsCheckbox = document.getElementById("ignoreCommentsCheckbox");
 const includeScriptStatsCheckbox = document.getElementById("includeScriptStatsCheckbox");
 const giveAiContextCheckbox = document.getElementById("giveAiContextCheckbox");
 const debugCheckbox = document.getElementById("debugCheckbox");
@@ -44,6 +45,7 @@ const DEFAULT_POPUP_SETTINGS = {
   ignoreWhereLastCommentIsFromUser: true,
   ignoreResolvedChanges: true,
   ignoreOutdatedChanges: true,
+  ignoreComments: true,
   includeScriptStats: false,
   giveAiContext: false,
   debug: false,
@@ -66,6 +68,7 @@ const REQUIRED_UI_ELEMENTS = [
   ["ignoreLastCommentCheckbox", ignoreLastCommentCheckbox],
   ["ignoreResolvedCheckbox", ignoreResolvedCheckbox],
   ["ignoreOutdatedCheckbox", ignoreOutdatedCheckbox],
+  ["ignoreCommentsCheckbox", ignoreCommentsCheckbox],
   ["includeScriptStatsCheckbox", includeScriptStatsCheckbox],
   ["giveAiContextCheckbox", giveAiContextCheckbox],
   ["debugCheckbox", debugCheckbox],

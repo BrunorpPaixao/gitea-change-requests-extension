@@ -34,6 +34,7 @@ async function collectConversations(options) {
   const ignoreWhereLastCommentIsFromUser = Boolean(options.ignoreWhereLastCommentIsFromUser);
   const ignoreResolvedChanges = options.ignoreResolvedChanges === undefined ? true : Boolean(options.ignoreResolvedChanges);
   const ignoreOutdatedChanges = options.ignoreOutdatedChanges === undefined ? true : Boolean(options.ignoreOutdatedChanges);
+  const ignoreComments = options.ignoreComments === undefined ? true : Boolean(options.ignoreComments);
   const includeScriptStats = Boolean(options.includeScriptStats);
   const debug = Boolean(options.debug);
   const verboseDiagnostics = Boolean(options.verboseDiagnostics);
@@ -42,6 +43,7 @@ async function collectConversations(options) {
     ignoreWhereLastCommentIsFromUser,
     ignoreResolvedChanges,
     ignoreOutdatedChanges,
+    ignoreComments,
     includeScriptStats,
     debug,
     verboseDiagnostics,
@@ -59,8 +61,11 @@ async function collectConversations(options) {
   completeness.outdatedSectionsExpanded = !globalExpand.attemptedOutdatedExpand || globalExpand.expandedOutdated;
   completeness.hiddenThreadsExpanded = !globalExpand.attemptedHiddenExpand || globalExpand.expandedHidden;
 
-  const blocks = Array.from(document.querySelectorAll(".ui.segments.conversation-holder"));
-  if (!blocks.length) {
+  const conversationBlocks = Array.from(document.querySelectorAll(".ui.segments.conversation-holder"));
+  const allStandaloneCommentBlocks = collectStandaloneCommentBlocks(conversationBlocks);
+  const standaloneCommentBlocks = ignoreComments ? [] : allStandaloneCommentBlocks;
+  const allCollectableBlocks = [...conversationBlocks, ...standaloneCommentBlocks];
+  if (!allCollectableBlocks.length) {
     const emptyRuntimeMs = Date.now() - startedAt;
     const emptyStats = {
       totalBlocks: 0,
@@ -68,6 +73,7 @@ async function collectConversations(options) {
       skippedResolved: 0,
       skippedOutdated: 0,
       skippedLastCommentByUser: 0,
+      skippedComments: ignoreComments ? allStandaloneCommentBlocks.length : 0,
       lastCommentByUserTotal: 0,
       lastCommentByUserSkippedResolved: 0,
       lastCommentByUserSkippedOutdated: 0,
@@ -97,11 +103,12 @@ async function collectConversations(options) {
   const selectedBlocks = [];
   const seenKeys = new Map();
   const stats = {
-    totalBlocks: blocks.length,
+    totalBlocks: allCollectableBlocks.length,
     included: 0,
     skippedResolved: 0,
     skippedOutdated: 0,
     skippedLastCommentByUser: 0,
+    skippedComments: 0,
     lastCommentByUserTotal: 0,
     lastCommentByUserSkippedResolved: 0,
     lastCommentByUserSkippedOutdated: 0,
@@ -110,7 +117,7 @@ async function collectConversations(options) {
   };
   const runtimeWarningThresholdMs = 2500;
 
-  for (const block of blocks) {
+  for (const block of conversationBlocks) {
     const lastAuthor = normalizeUserName(getLastCommentAuthorFromBlock(block) || "");
     const lastCommentByUser = Boolean(normalizedUserName) && Boolean(lastAuthor) && lastAuthor === normalizedUserName;
     if (lastCommentByUser) {
@@ -219,6 +226,69 @@ async function collectConversations(options) {
     }
   }
 
+  for (let index = 0; index < standaloneCommentBlocks.length; index += 1) {
+    const block = standaloneCommentBlocks[index];
+    const conversation = extractStandaloneCommentConversation(block, index);
+    if (!conversation) {
+      stats.skippedNoConversationData += 1;
+      if (completeness.parseWarnings.length < 30) {
+        completeness.parseWarnings.push("standalone_comment_without_comment_data");
+      }
+      if (verboseDiagnostics && diagnosticsDecisions.length < maxDiagnosticsDecisions) {
+        diagnosticsDecisions.push({ decision: "skipped_no_data_comment" });
+      }
+      continue;
+    }
+
+    const lastCommentByUser = Boolean(normalizedUserName) && isLastCommentFromUser(block, conversation, normalizedUserName);
+    if (lastCommentByUser) {
+      stats.lastCommentByUserTotal += 1;
+    }
+
+    if (
+      ignoreWhereLastCommentIsFromUser &&
+      normalizedUserName &&
+      lastCommentByUser
+    ) {
+      stats.skippedLastCommentByUser += 1;
+      if (verboseDiagnostics && diagnosticsDecisions.length < maxDiagnosticsDecisions) {
+        diagnosticsDecisions.push({
+          decision: "skipped_last_comment_user_comment",
+          conversationId: conversation.conversationId || null,
+          filePath: conversation.filePath || null,
+        });
+      }
+      continue;
+    }
+
+    conversation._selectionReason = deriveSelectionReason({
+      conversation,
+      normalizedUserName,
+      lastCommentByUser,
+      ignoreWhereLastCommentIsFromUser,
+      ignoreResolvedChanges,
+      ignoreOutdatedChanges,
+    });
+    const dedupeKey = conversation.conversationId || `standalone-comment:${index}`;
+    if (seenKeys.has(dedupeKey)) {
+      stats.deduped += 1;
+      continue;
+    }
+    seenKeys.set(dedupeKey, results.length);
+    results.push(conversation);
+    selectedBlocks.push(block);
+    stats.included += 1;
+    if (verboseDiagnostics && diagnosticsDecisions.length < maxDiagnosticsDecisions) {
+      diagnosticsDecisions.push({
+        decision: "included_comment",
+        conversationId: conversation.conversationId || null,
+        filePath: conversation.filePath || null,
+      });
+    }
+  }
+
+  stats.skippedComments = ignoreComments ? allStandaloneCommentBlocks.length : 0;
+
   stats.runtimeMs = Date.now() - startedAt;
   const warning =
     stats.runtimeMs > runtimeWarningThresholdMs
@@ -235,7 +305,7 @@ async function collectConversations(options) {
   return {
     conversations: results,
     blocks: selectedBlocks,
-    allBlocks: blocks,
+    allBlocks: allCollectableBlocks,
     stats,
     normalizedOptions,
     completeness,
@@ -247,6 +317,61 @@ async function collectConversations(options) {
       warning,
       startedAt,
     }),
+  };
+}
+
+function collectStandaloneCommentBlocks(conversationBlocks) {
+  const conversationSet = new Set(conversationBlocks || []);
+  const candidates = Array.from(document.querySelectorAll(".timeline-item.comment"));
+  const result = [];
+  for (const node of candidates) {
+    if (!(node instanceof Element)) {
+      continue;
+    }
+    if (conversationSet.has(node)) {
+      continue;
+    }
+    if (node.closest(".ui.segments.conversation-holder")) {
+      continue;
+    }
+    if (node.matches(".form, .pull-merge-box")) {
+      continue;
+    }
+    if (!node.querySelector(".content.comment-container")) {
+      continue;
+    }
+    if (!node.querySelector(".raw-content, .render-content")) {
+      continue;
+    }
+    result.push(node);
+  }
+  return result;
+}
+
+function extractStandaloneCommentConversation(block, index) {
+  const rootComment = extractComment(block);
+  if (!rootComment) {
+    return null;
+  }
+
+  const explicitId = valueOrNull(rootComment.id);
+  const fallbackId =
+    valueOrNull(block.getAttribute("data-comment-id")) || valueOrNull(block.id ? normalizeCommentId(block.id) : null);
+  const conversationId = explicitId || fallbackId || `standalone-comment-${index + 1}`;
+  const commentAnchor = valueOrNull(block.querySelector("a[href*='#issuecomment-']")?.getAttribute("href"));
+  const threadUrl = commentAnchor || (conversationId ? `#issuecomment-${conversationId}` : null);
+
+  return {
+    conversationId,
+    filePath: null,
+    line: null,
+    outdated: false,
+    hunkHeader: null,
+    threadUrl,
+    rootComment,
+    comments: [],
+    resolved: false,
+    commentCount: 1,
   };
 }
 
@@ -263,6 +388,7 @@ function buildDiagnosticsPayload({ mode, normalizedOptions, stats, decisions, wa
       included: Number(stats?.included || 0),
       skippedResolved: Number(stats?.skippedResolved || 0),
       skippedOutdated: Number(stats?.skippedOutdated || 0),
+      skippedComments: Number(stats?.skippedComments || 0),
       skippedLastCommentByUser: Number(stats?.skippedLastCommentByUser || 0),
       skippedNoConversationData: Number(stats?.skippedNoConversationData || 0),
       deduped: Number(stats?.deduped || 0),
@@ -277,18 +403,16 @@ function buildSchemaV21Envelope(conversations, blocks, normalizedOptions, stats,
   const prAuthorUserName = normalizeUserName(detectPrAuthorUserName() || "") || null;
   const scopeType =
     envelopeOptions?.scopeType === "single_conversation" ? "single_conversation" : "pull_request";
+  const isSingleConversationScope = scopeType === "single_conversation";
   const enrichedConversations = conversations.map((conversation, index) =>
-    enrichConversationForFacts(conversation, blocks[index] || null, { currentUserName, prAuthorUserName })
+    enrichConversationForFacts(conversation, blocks[index] || null, {
+      currentUserName,
+      prAuthorUserName,
+      includeCommentOrderFields: !isSingleConversationScope,
+    })
   );
 
   const includeScriptStats = Boolean(normalizedOptions && normalizedOptions.includeScriptStats);
-  const participants = buildParticipantsPayload(enrichedConversations, {
-    prAuthorUserName,
-    reviewerUserNames: detectReviewerUserNames(),
-    pageParticipantUserNames: detectPageParticipantUserNames(),
-  });
-  const views = buildDeterministicViews(enrichedConversations);
-  const counts = buildCounts(enrichedConversations);
   const envelope = {
     schemaVersion: SCHEMA_VERSION,
     scope: {
@@ -311,25 +435,32 @@ function buildSchemaV21Envelope(conversations, blocks, normalizedOptions, stats,
       currentUserKnown: Boolean(currentUserName),
       prAuthorKnown: Boolean(prAuthorUserName),
     },
-    participants,
-    exportOptions: buildExportOptions(normalizedOptions),
-    completeness: {
-      allThreadsLoaded: Boolean(completeness?.allThreadsLoaded),
-      outdatedSectionsExpanded: Boolean(completeness?.outdatedSectionsExpanded),
-      hiddenThreadsExpanded: Boolean(completeness?.hiddenThreadsExpanded),
-      parseWarnings: Array.isArray(completeness?.parseWarnings) ? completeness.parseWarnings : [],
-    },
-    ordering: {
-      conversations: "page_dom_order",
-      comments: "chronological_ascending_with_dom_stable_fallback",
-    },
-    counts,
-    views,
     conversations: enrichedConversations,
     exportFingerprint: `fnv1a:${computeEnvelopeFingerprint(enrichedConversations, window.location.href, SCHEMA_VERSION)}`,
   };
 
-  if (includeScriptStats) {
+  if (!isSingleConversationScope) {
+    envelope.participants = buildParticipantsPayload(enrichedConversations, {
+      prAuthorUserName,
+      reviewerUserNames: detectReviewerUserNames(),
+      pageParticipantUserNames: detectPageParticipantUserNames(),
+    });
+    envelope.exportOptions = buildExportOptions(normalizedOptions);
+    envelope.completeness = {
+      allThreadsLoaded: Boolean(completeness?.allThreadsLoaded),
+      outdatedSectionsExpanded: Boolean(completeness?.outdatedSectionsExpanded),
+      hiddenThreadsExpanded: Boolean(completeness?.hiddenThreadsExpanded),
+      parseWarnings: Array.isArray(completeness?.parseWarnings) ? completeness.parseWarnings : [],
+    };
+    envelope.ordering = {
+      conversations: "page_dom_order",
+      comments: "chronological_ascending_with_dom_stable_fallback",
+    };
+    envelope.counts = buildCounts(enrichedConversations);
+    envelope.views = buildDeterministicViews(enrichedConversations);
+  }
+
+  if (includeScriptStats && !isSingleConversationScope) {
     envelope.filtersApplied = normalizedOptions;
     envelope.stats = stats;
   }
@@ -379,6 +510,7 @@ function buildExportOptions(normalizedOptions) {
     ignoreLastCommentByUser: Boolean(normalizedOptions?.ignoreWhereLastCommentIsFromUser),
     ignoreResolved: normalizedOptions?.ignoreResolvedChanges !== false,
     ignoreOutdated: normalizedOptions?.ignoreOutdatedChanges !== false,
+    ignoreComments: normalizedOptions?.ignoreComments !== false,
     scriptStats: Boolean(normalizedOptions?.includeScriptStats),
     debug: Boolean(normalizedOptions?.debug),
     verboseDiagnostics: Boolean(normalizedOptions?.verboseDiagnostics),
@@ -410,6 +542,7 @@ function enrichConversationForFacts(conversation, block, actors) {
   const lastCommentUrl = buildLastCommentUrl(absoluteThreadUrl, lastComment?.id || null);
   const commentIdsInOrder = orderedTimeline.map((comment) => comment?.id || null);
   const commentAuthorsInOrder = orderedTimeline.map((comment) => comment?.author || null);
+  const includeCommentOrderFields = actors?.includeCommentOrderFields !== false;
   const canonicalConversationId = valueOrNull(conversation.conversationId);
   const shouldIncludeThreadKey = !canonicalConversationId || String(canonicalConversationId) !== threadKey;
 
@@ -425,8 +558,8 @@ function enrichConversationForFacts(conversation, block, actors) {
     ...(codeContext ? { codeContext } : {}),
     commentCount,
     hasReplies: comments.length > 0,
-    commentIdsInOrder,
-    commentAuthorsInOrder,
+    ...(includeCommentOrderFields ? { commentIdsInOrder } : {}),
+    ...(includeCommentOrderFields ? { commentAuthorsInOrder } : {}),
     lastCommentId: lastComment?.id || null,
     lastCommentAuthor: lastComment?.author || null,
     lastCommentAuthorIsCurrentUser,
@@ -617,6 +750,9 @@ function normalizeActorsForExport(actors) {
 }
 
 function normalizeViewsForExport(views) {
+  if (views === undefined) {
+    return undefined;
+  }
   const normalized = sortObjectKeysAlpha(views || {});
   if (normalized.byFile && typeof normalized.byFile === "object" && !Array.isArray(normalized.byFile)) {
     const sortedByFile = {};

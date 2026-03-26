@@ -15,6 +15,7 @@ function setBusy(isBusy) {
   ignoreLastCommentCheckbox.disabled = isBusy;
   ignoreResolvedCheckbox.disabled = isBusy;
   ignoreOutdatedCheckbox.disabled = isBusy;
+  ignoreCommentsCheckbox.disabled = isBusy;
   includeScriptStatsCheckbox.disabled = isBusy;
   giveAiContextCheckbox.disabled = isBusy;
   debugCheckbox.disabled = isBusy;
