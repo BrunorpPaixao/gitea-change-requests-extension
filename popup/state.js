@@ -35,6 +35,11 @@ const copyDiagnosticsBtn = document.getElementById("copyDiagnosticsBtn");
 const downloadDiagnosticsBtn = document.getElementById("downloadDiagnosticsBtn");
 const themeDarkBtn = document.getElementById("themeDarkBtn");
 const themeLightBtn = document.getElementById("themeLightBtn");
+const actionTabJson = document.getElementById("actionTabJson");
+const actionTabDownload = document.getElementById("actionTabDownload");
+const jsonActionsPanel = document.getElementById("jsonActionsPanel");
+const downloadActionsPanel = document.getElementById("downloadActionsPanel");
+const debugToolsCard = document.getElementById("debugToolsCard");
 
 const THEME_STORAGE_KEY = "gitea-pr-review-exporter-theme";
 const POPUP_SETTINGS_STORAGE_KEY = "gitea-pr-review-exporter-popup-settings-v2";
@@ -92,6 +97,11 @@ const REQUIRED_UI_ELEMENTS = [
   ["downloadDiagnosticsBtn", downloadDiagnosticsBtn],
   ["themeDarkBtn", themeDarkBtn],
   ["themeLightBtn", themeLightBtn],
+  ["actionTabJson", actionTabJson],
+  ["actionTabDownload", actionTabDownload],
+  ["jsonActionsPanel", jsonActionsPanel],
+  ["downloadActionsPanel", downloadActionsPanel],
+  ["debugToolsCard", debugToolsCard],
 ];
 
 const missingUiElements = REQUIRED_UI_ELEMENTS.filter(([, element]) => !element).map(([name]) => name);

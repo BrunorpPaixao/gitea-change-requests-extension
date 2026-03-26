@@ -27,6 +27,8 @@ function setBusy(isBusy) {
   verboseDiagnosticsCheckbox.disabled = isBusy;
   copyDiagnosticsBtn.disabled = isBusy;
   downloadDiagnosticsBtn.disabled = isBusy;
+  actionTabJson.disabled = isBusy;
+  actionTabDownload.disabled = isBusy;
 }
 
 function setBundleVisualState(state) {
@@ -155,10 +157,25 @@ function setError(message) {
 
 function setDebugVisible(isVisible) {
   const show = Boolean(isVisible);
-  feedbackPanel.classList.toggle("debug-hidden", !show);
-  feedbackPanel.classList.toggle("is-open", show);
-  feedbackPanel.setAttribute("aria-hidden", show ? "false" : "true");
-  diagnosticsActions.classList.toggle("debug-hidden", !show);
-  diagnosticsActions.classList.toggle("is-open", show);
-  diagnosticsActions.setAttribute("aria-hidden", show ? "false" : "true");
+  debugToolsCard.classList.toggle("debug-hidden", !show);
+  debugToolsCard.classList.toggle("is-open", show);
+  debugToolsCard.setAttribute("aria-hidden", show ? "false" : "true");
+}
+
+function initializeActionTabs() {
+  const applyTab = (mode) => {
+    const isJson = mode !== "download";
+    actionTabJson.classList.toggle("is-active", isJson);
+    actionTabDownload.classList.toggle("is-active", !isJson);
+    actionTabJson.setAttribute("aria-selected", isJson ? "true" : "false");
+    actionTabDownload.setAttribute("aria-selected", isJson ? "false" : "true");
+    jsonActionsPanel.classList.toggle("is-active", isJson);
+    downloadActionsPanel.classList.toggle("is-active", !isJson);
+    jsonActionsPanel.hidden = !isJson;
+    downloadActionsPanel.hidden = isJson;
+  };
+
+  actionTabJson.addEventListener("click", () => applyTab("json"));
+  actionTabDownload.addEventListener("click", () => applyTab("download"));
+  applyTab("json");
 }
