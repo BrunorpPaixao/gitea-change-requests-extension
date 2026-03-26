@@ -402,6 +402,7 @@
       const resolution = getConversationResolution(block);
       conversation.resolved = resolution === "resolved";
       conversation.commentCount = (conversation.rootComment ? 1 : 0) + conversation.comments.length;
+      const popupSettings = (await getPopupSettingsFromStorage()) || {};
       const resolvedCurrentUserName = await resolveSingleConversationCurrentUserName();
 
       const envelope = buildSchemaV21Envelope(
@@ -438,7 +439,12 @@
         }
       );
 
-      const jsonText = JSON.stringify(envelope, null, 2);
+      const shortKeys = popupSettings.shortKeys !== false;
+      const minify = Boolean(popupSettings.minifyJsonOutput);
+      const serializer = globalThis.GPREExportSerializer;
+      const jsonText = serializer
+        ? serializer.serializeForExport(envelope, { shortKeys, minify })
+        : JSON.stringify(envelope, null, minify ? 0 : 2);
       const ok = await copyTextToClipboard(jsonText);
       if (!ok) {
         setTemporaryButtonState(button, "Copy failed", 1600);
@@ -461,6 +467,12 @@
   }
 
   async function getPopupUserNameFromStorage() {
+    const settings = await getPopupSettingsFromStorage();
+    const userName = valueOrNull(settings?.userName);
+    return userName || null;
+  }
+
+  async function getPopupSettingsFromStorage() {
     if (!globalThis.chrome?.storage?.local?.get) {
       return null;
     }
@@ -487,8 +499,7 @@
       });
 
       const settings = payload?.[key];
-      const userName = valueOrNull(settings?.userName);
-      return userName || null;
+      return settings && typeof settings === "object" ? settings : null;
     } catch (_error) {
       return null;
     }
@@ -736,6 +747,87 @@
     }
 
     return null;
+  }
+
+  function getPrJiraLinks() {
+    const links = [];
+    const seenKeys = new Set();
+    const candidateScopes = [
+      document.querySelector("#issue-title"),
+      document.querySelector(".issue-title"),
+      document.querySelector("#pull-desc-display"),
+      document.querySelector(".pull-desc"),
+    ].filter(Boolean);
+
+    for (const scope of candidateScopes) {
+      if (!(scope instanceof Element)) {
+        continue;
+      }
+      for (const anchor of scope.querySelectorAll("a[href]")) {
+        const href = valueOrNull(anchor.getAttribute("href"));
+        if (!href) {
+          continue;
+        }
+        const absoluteUrl = toAbsoluteHref(href);
+        if (!absoluteUrl) {
+          continue;
+        }
+        const keyFromText = extractJiraKey(anchor.textContent || "");
+        const keyFromUrl = extractJiraKey(absoluteUrl);
+        const key = keyFromText || keyFromUrl;
+        if (!key) {
+          continue;
+        }
+        if (!isLikelyJiraUrl(absoluteUrl, key)) {
+          continue;
+        }
+        if (seenKeys.has(key)) {
+          continue;
+        }
+        seenKeys.add(key);
+        links.push({ key, url: absoluteUrl });
+      }
+
+    }
+
+    return links.slice(0, 8);
+  }
+
+  function extractJiraKey(value) {
+    const text = String(value || "");
+    const match = text.match(/\b([A-Z][A-Z0-9]+-\d+)\b/);
+    return match ? match[1] : null;
+  }
+
+  function toAbsoluteHref(href) {
+    try {
+      return new URL(String(href || ""), window.location.href).toString();
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  function isLikelyJiraUrl(urlValue, jiraKey) {
+    try {
+      const url = new URL(String(urlValue || ""));
+      if (!/^https?:$/i.test(url.protocol)) {
+        return false;
+      }
+      if (url.host === window.location.host) {
+        return false;
+      }
+
+      const normalizedPath = (url.pathname || "").toLowerCase();
+      const normalizedKey = String(jiraKey || "").toLowerCase();
+      const hostLooksJira = /jira/i.test(url.host);
+      const browsePath = /\/browse\//i.test(normalizedPath);
+      const keyInPath = normalizedPath.includes(normalizedKey);
+      const keyInQuery = (url.search || "").toLowerCase().includes(normalizedKey);
+
+      return hostLooksJira || browsePath || keyInPath || keyInQuery;
+    } catch (_error) {
+      return false;
+    }
   }
 
   function detectReviewerUserNames() {

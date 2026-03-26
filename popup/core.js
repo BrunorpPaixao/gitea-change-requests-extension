@@ -40,6 +40,15 @@ async function initPopup() {
   }
 
   try {
+    const jiraResponse = await sendMessageToPrTab(tab.id, {
+      type: "GET_PR_JIRA_LINKS",
+    });
+    renderJiraLinks(jiraResponse?.ok ? jiraResponse.links : []);
+  } catch (_error) {
+    renderJiraLinks([]);
+  }
+
+  try {
     const userResponse = await sendMessageToPrTab(tab.id, {
       type: "GET_DEFAULT_GIT_USERNAME",
     });
@@ -54,18 +63,53 @@ async function initPopup() {
   }
 }
 
-async function handleAction(action) {
+function renderJiraLinks(links) {
+  if (!jiraLinksRow) {
+    return;
+  }
+  jiraLinksRow.innerHTML = "";
+  const items = Array.isArray(links) ? links.filter((item) => item && item.key) : [];
+  if (!items.length) {
+    jiraLinksRow.classList.remove("is-visible");
+    return;
+  }
+
+  for (const item of items.slice(0, 8)) {
+    const linkEl = document.createElement(item.url ? "a" : "span");
+    linkEl.className = "jira-link-btn";
+    linkEl.setAttribute("title", item.url ? `Open ${item.key}` : item.key);
+    linkEl.setAttribute("aria-label", item.url ? `Open ${item.key}` : item.key);
+    if (item.url) {
+      linkEl.setAttribute("href", item.url);
+      linkEl.setAttribute("target", "_blank");
+      linkEl.setAttribute("rel", "noopener noreferrer");
+    }
+    linkEl.innerHTML = `
+      <span class="jira-icon" aria-hidden="true">
+        <svg viewBox="0 0 20 20" width="12" height="12" focusable="false">
+          <path fill="currentColor" d="M6.1 3.1h7.8a2 2 0 0 1 2 2v7.8a2 2 0 0 1-2 2H6.1a2 2 0 0 1-2-2V5.1a2 2 0 0 1 2-2Zm1.9 3.1a.8.8 0 1 0 0 1.6h3.3L7.8 11a.8.8 0 1 0 1.1 1.1l3.5-3.3v3.1a.8.8 0 0 0 1.6 0V7a.8.8 0 0 0-.8-.8H8Z"/>
+        </svg>
+      </span>
+      <span class="jira-key">${item.key}</span>
+    `;
+    jiraLinksRow.appendChild(linkEl);
+  }
+  jiraLinksRow.classList.add("is-visible");
+}
+
+async function handleAction(action, actionOptions = {}) {
   setBusy(true);
   setStatus("Scraping conversations...");
   setError("");
 
   try {
-    const exportData = await buildExportData();
+    const exportData = await buildExportData(actionOptions);
+    const sourceButton = actionOptions?.sourceButton || (action === "copy" ? copyBtn : downloadBtn);
 
     if (action === "copy") {
       await navigator.clipboard.writeText(exportData.outputText);
-      triggerActionPulse(copyBtn);
-      showSuccessBadge(copyBtn, "Copied");
+      triggerActionPulse(sourceButton);
+      showSuccessBadge(sourceButton, "Copied");
       markDiagnosticsReadyCue();
       setStatus(
         exportData.giveAiContext
@@ -76,8 +120,8 @@ async function handleAction(action) {
     }
 
     const conversationCount = await downloadJsonExport({ saveAs: true, exportData });
-    triggerActionPulse(downloadBtn);
-    showSuccessBadge(downloadBtn, "Saved");
+    triggerActionPulse(sourceButton);
+    showSuccessBadge(sourceButton, "Saved");
     markDiagnosticsReadyCue();
     setStatus(
       exportData.giveAiContext
@@ -124,15 +168,26 @@ async function handleDownloadBundle() {
   }
 }
 
-async function buildExportData() {
+async function buildExportData(actionOptions = {}) {
   const { tab, exportPayload } = await runScrape();
   const conversations = Array.isArray(exportPayload.conversations) ? exportPayload.conversations : [];
   summaryEl.textContent = `Conversations found: ${conversations.length}`;
   const giveAiContext = Boolean(giveAiContextCheckbox?.checked);
-  const minifyJsonOutput = Boolean(minifyJsonCheckbox?.checked);
+  const shortKeys =
+    actionOptions?.serializationOverrides?.shortKeys === undefined
+      ? shortKeysCheckbox?.checked !== false
+      : Boolean(actionOptions.serializationOverrides.shortKeys);
+  const minifyJsonOutput =
+    actionOptions?.serializationOverrides?.minifyJsonOutput === undefined
+      ? Boolean(minifyJsonCheckbox?.checked)
+      : Boolean(actionOptions.serializationOverrides.minifyJsonOutput);
+  const serializer = globalThis.GPREExportSerializer;
+  const outputPayload = serializer
+    ? serializer.transformForExport(exportPayload, { shortKeys })
+    : exportPayload;
   const outputText = giveAiContext
-    ? buildAiContextText(exportPayload, { minifyJsonOutput })
-    : JSON.stringify(exportPayload, null, minifyJsonOutput ? 0 : 2);
+    ? buildAiContextText(outputPayload, { minifyJsonOutput })
+    : JSON.stringify(outputPayload, null, minifyJsonOutput ? 0 : 2);
   const filename = giveAiContext
     ? buildAiContextFilename(tab.url || "", tab.title || "")
     : buildFilename(tab.url || "", tab.title || "");
@@ -329,6 +384,7 @@ async function handleDiagnosticsAction(action) {
     setBusy(false);
   }
 }
+
 
 async function handleDiffDownload() {
   setBusy(true);

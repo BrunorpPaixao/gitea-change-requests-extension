@@ -5,6 +5,7 @@
 var SCRAPE_ACTION = "SCRAPE_UNRESOLVED_CONVERSATIONS";
 var GET_DEFAULT_USER_ACTION = "GET_DEFAULT_GIT_USERNAME";
 var GET_PR_CONTEXT_ACTION = "GET_PR_CONTEXT";
+var GET_PR_JIRA_LINKS_ACTION = "GET_PR_JIRA_LINKS";
 var GET_LAST_DIAGNOSTICS_ACTION = "GET_LAST_DIAGNOSTICS";
 var TEST_SELECTION_ACTION = "TEST_SELECTION";
 var TEST_HIGHLIGHTS_ACTION = "TEST_HIGHLIGHTS";
@@ -29,6 +30,7 @@ var ScrapeModule = {
 };
 var UserModule = {
   detectDefaultGitUserName: (...args) => detectDefaultGitUserName(...args),
+  getPrJiraLinks: (...args) => getPrJiraLinks(...args),
 };
 var lastDiagnostics = null;
 
@@ -37,6 +39,7 @@ globalThis.GPREContentCore = {
     SCRAPE_ACTION,
     GET_DEFAULT_USER_ACTION,
     GET_PR_CONTEXT_ACTION,
+    GET_PR_JIRA_LINKS_ACTION,
     GET_LAST_DIAGNOSTICS_ACTION,
     TEST_SELECTION_ACTION,
     TEST_HIGHLIGHTS_ACTION,
@@ -47,6 +50,7 @@ globalThis.GPREContentCore = {
   },
   getDefaultUser: () => UserModule.detectDefaultGitUserName(),
   getPrContext: () => PrContextModule.getPrContext(),
+  getPrJiraLinks: () => UserModule.getPrJiraLinks(),
   getLastDiagnostics: () => lastDiagnostics,
   scrape: (options) => ScrapeModule.scrapeUnresolvedConversations(options),
   testSelection: (options) => ScrapeModule.testSelection(options),
