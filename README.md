@@ -2,47 +2,16 @@
 
 Chrome extension (Manifest V3) to export unresolved Gitea pull request review conversations from PR files/conversation pages into JSON.
 
-## Branch Update Summary (2026-03-25)
-This branch refines the exporter contract to be stricter, leaner, and factual-only.
+## Download and Install
+If you just want to use the extension (recommended):
+1. Download the latest release zip from the repository Releases page.
+2. Unzip it locally.
+3. Open `chrome://extensions`.
+4. Enable **Developer mode**.
+5. Click **Load unpacked**.
+6. Select the unzipped extension folder.
 
-### What Changed
-- Export scope is explicit:
-  - full PR export sets `"scope": { "type": "pull_request" }`
-  - single-conversation export sets `"scope": { "type": "single_conversation" }`
-- Identity model is explicit:
-  - `actors` is the source of truth (`currentUser`, `prAuthor`)
-  - `identityResolution` indicates whether those identities are known
-- Participant output is normalized:
-  - `participants.reviewers`
-  - `participants.pageParticipants`
-  - `participants.commentAuthors`
-- Conversation payload is leaner:
-  - canonical location fields are `lineNew`, `lineOld`, `diffSide`
-  - no comment-level identity booleans
-  - no semantic/workflow inference fields
-- URL fields are now direct and actionable:
-  - `threadUrl` is absolute
-  - `lastCommentUrl` is absolute and anchored to the last comment
-- Deterministic workflow helpers expanded:
-  - `views.unresolvedLastCommentByOtherUserNewestFirst`
-  - `views.byFile`
-  - `commentIdsInOrder` / `commentAuthorsInOrder`
-- Single-conversation export is intentionally lean:
-  - keeps only `schemaVersion`, `scope`, `source`, `actors`, `identityResolution`, `conversations`, `exportFingerprint`
-  - omits top-level aggregation blocks and conversation-level ordering duplication arrays
-- `selectionReason` is stable and documented:
-  - `included_by_default`
-  - `included_resolved`
-  - `included_outdated`
-  - `included_last_comment_by_current_user`
-
-### Diff Grounding
-- `codeContext` is extracted only from visible diff table rows on the PR page.
-- It is conversation-level only.
-- It uses factual hunk/row data (`hunkHeader`, `lines[]` with `type`, `oldLine`, `newLine`, `marker`, `text`).
-- It is omitted when matching/extraction is not confident.
-
-## Install (Unpacked)
+If you downloaded source from GitHub (**Code > Download ZIP**) or cloned the repo:
 1. Open `chrome://extensions`.
 2. Enable **Developer mode**.
 3. Click **Load unpacked**.
@@ -65,6 +34,11 @@ This branch refines the exporter contract to be stricter, leaner, and factual-on
 6. Click **Give AI Context** to copy a ready-to-use prompt (instructions + schema v2.1-factual JSON).
 7. Click **Copy JSON** or **Download JSON**.
 8. In Debug mode, use **Copy Diagnostics** / **Download Diagnostics** after a run to inspect parser decisions.
+
+## User Notes
+- Supported pages: Gitea PR URLs like `/OWNER/REPO/pulls/123` on hosts starting with `git`.
+- The extension works on the active PR tab and exports factual conversation data only.
+- If your PR has hidden/outdated sections, the scraper attempts to expand and include them based on your active filters.
 
 ## Popup Settings Persistence
 Popup settings are stored in `chrome.storage.local` and restored each time the popup opens:
@@ -420,6 +394,48 @@ Manifest permissions and purpose:
 - `downloads`: support JSON/TXT file download
 - `clipboardWrite`: copy JSON/AI context to clipboard
 - `storage`: persist popup settings
+
+## Technical Notes and Developer Documentation
+
+### Branch Update Summary (2026-03-25)
+This branch refines the exporter contract to be stricter, leaner, and factual-only.
+
+#### What Changed
+- Export scope is explicit:
+  - full PR export sets `"scope": { "type": "pull_request" }`
+  - single-conversation export sets `"scope": { "type": "single_conversation" }`
+- Identity model is explicit:
+  - `actors` is the source of truth (`currentUser`, `prAuthor`)
+  - `identityResolution` indicates whether those identities are known
+- Participant output is normalized:
+  - `participants.reviewers`
+  - `participants.pageParticipants`
+  - `participants.commentAuthors`
+- Conversation payload is leaner:
+  - canonical location fields are `lineNew`, `lineOld`, `diffSide`
+  - no comment-level identity booleans
+  - no semantic/workflow inference fields
+- URL fields are now direct and actionable:
+  - `threadUrl` is absolute
+  - `lastCommentUrl` is absolute and anchored to the last comment
+- Deterministic workflow helpers expanded:
+  - `views.unresolvedLastCommentByOtherUserNewestFirst`
+  - `views.byFile`
+  - `commentIdsInOrder` / `commentAuthorsInOrder`
+- Single-conversation export is intentionally lean:
+  - keeps only `schemaVersion`, `scope`, `source`, `actors`, `identityResolution`, `conversations`, `exportFingerprint`
+  - omits top-level aggregation blocks and conversation-level ordering duplication arrays
+- `selectionReason` is stable and documented:
+  - `included_by_default`
+  - `included_resolved`
+  - `included_outdated`
+  - `included_last_comment_by_current_user`
+
+#### Diff Grounding
+- `codeContext` is extracted only from visible diff table rows on the PR page.
+- It is conversation-level only.
+- It uses factual hunk/row data (`hunkHeader`, `lines[]` with `type`, `oldLine`, `newLine`, `marker`, `text`).
+- It is omitted when matching/extraction is not confident.
 
 ## CI and Local Verification
 This repository includes zero-dependency CI scripts:

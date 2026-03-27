@@ -137,6 +137,7 @@ Both popup checks and content checks enforce this.
 - When adding UI controls, wire popup -> message options -> content behavior end-to-end.
 - Prefer feature-folder organization for new work; avoid adding unrelated logic to existing large files.
 - Keep modules single-purpose and named by behavior (`collectThreads`, `applyFilters`, `exportJson`, `renderStatus`) rather than generic names like `utils2`.
+- Update `CHANGELOG.md` for every user-visible functionality change (new features, behavior changes, or removals). Skip changelog updates for small internal refactors, formatting, or non-functional maintenance.
 
 ## Design Context
 
