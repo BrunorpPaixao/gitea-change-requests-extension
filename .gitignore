@@ -31,11 +31,11 @@ pnpm-debug.log*
 node_modules/
 
 # Build and packaging artifacts
-dist/
+# dist/
 build/
 out/
 coverage/
-*.zip
+# *.zip
 *.crx
 
 # Temporary files
