@@ -391,6 +391,7 @@ The extension is scoped to Gitea PR pages on hosts that start with `git`:
 Manifest permissions and purpose:
 - `activeTab`: interact with the currently active PR page
 - `tabs`: read active-tab URL/title for validation and filenames
+- `scripting`: execute extension-owned scripts on the active Gitea PR tab to run scraping/highlight/export workflows
 - `downloads`: support JSON/TXT file download
 - `clipboardWrite`: copy JSON/AI context to clipboard
 - `storage`: persist popup settings

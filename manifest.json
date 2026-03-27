@@ -2,7 +2,8 @@
   "manifest_version": 3,
   "name": "Gitea PR Review Exporter",
   "version": "1.0.0",
-  "description": "Export unresolved Gitea pull request review conversations as JSON.",
+  "description": "Export Gitea pull request review conversation nodes (Change requests, Comments) as JSON.",
+  "homepage_url": "https://github.com/BrunorpPaixao/gitea-change-requests-extension",
   "permissions": ["activeTab", "tabs", "downloads", "clipboardWrite", "storage", "scripting"],
   "icons": {
     "16": "icons/icon-16.png",
