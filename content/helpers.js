@@ -1029,7 +1029,7 @@
           await waitForDomSettle(document.body, 500);
         }
       }
-      if (/show\s+conversation|show\s+comments|load\s+more|expand/i.test(label) && isElementActionable(el)) {
+      if (isConversationExpandControlLabel(label) && isElementActionable(el)) {
         attemptedHiddenExpand = true;
         const key = elementKey(el);
         if (!clicked.has(key)) {
@@ -1101,7 +1101,7 @@
         if (!label) {
           continue;
         }
-        if (!/show\s+outdated|show\s+conversation|show\s+comments|expand|load\s+more/i.test(label)) {
+        if (!isConversationExpandControlLabel(label)) {
           continue;
         }
         attemptedHiddenExpand = true;
@@ -1123,6 +1123,14 @@
 
     await waitForDomSettle(block, 300);
     return { attemptedHiddenExpand, expandedHidden };
+  }
+
+  function isConversationExpandControlLabel(label) {
+    const normalized = normalizeWhitespace(label || "").toLowerCase();
+    if (!normalized) {
+      return false;
+    }
+    return /show\s+(outdated|resolved|conversation|conversations|comments|hidden|all)|load\s+more|expand/.test(normalized);
   }
 
   function maybeExtractCodeContext(block, target) {
