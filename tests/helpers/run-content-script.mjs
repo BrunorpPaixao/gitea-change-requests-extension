@@ -3,11 +3,14 @@
  * Boots content scripts in JSDOM and provides a message-based helper for integration-style tests.
  */
 import { readFileSync } from "node:fs";
+import vm from "node:vm";
 import { JSDOM } from "jsdom";
 
-const MANIFEST_PATH = new URL("../../manifest.json", import.meta.url);
-const manifest = JSON.parse(readFileSync(MANIFEST_PATH, "utf8"));
-const contentScriptFiles = manifest?.content_scripts?.[0]?.js || [];
+const runtimeContentScriptFilesPath = new URL("../../shared/content-script-files.js", import.meta.url);
+const runtimeContentScriptFilesSource = readFileSync(runtimeContentScriptFilesPath, "utf8");
+const runtimeContentScriptFilesContext = { globalThis: {} };
+vm.runInNewContext(runtimeContentScriptFilesSource, runtimeContentScriptFilesContext);
+const contentScriptFiles = runtimeContentScriptFilesContext.globalThis.GPREContentScriptFiles || [];
 const contentScriptTexts = contentScriptFiles.map((filePath) => {
   const fileUrl = new URL(`../../${filePath}`, import.meta.url);
   return readFileSync(fileUrl, "utf8");
@@ -38,6 +41,18 @@ export function createContentHarness({ html, url, storageLocal = {} }) {
             return;
           }
           return Promise.resolve(result);
+        },
+        set(items, callback) {
+          if (items && typeof items === "object") {
+            for (const [key, value] of Object.entries(items)) {
+              storageLocal[key] = value;
+            }
+          }
+          if (typeof callback === "function") {
+            callback();
+            return;
+          }
+          return Promise.resolve();
         },
       },
     },

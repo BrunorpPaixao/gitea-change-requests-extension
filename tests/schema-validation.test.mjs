@@ -67,6 +67,7 @@ test("selectionReason enum is explicit and stable in schema", () => {
     "included_resolved",
     "included_outdated",
     "included_last_comment_by_current_user",
+    "included_manual_override",
   ]);
 });
 
@@ -77,6 +78,7 @@ test("README documents pageParticipants source/meaning and ordering guarantees",
   assert.equal(readmeText.includes("### Property Ordering Contract"), true);
   assert.equal(readmeText.includes("Top-level export object order"), true);
   assert.equal(readmeText.includes("Conversation object order"), true);
+  assert.equal(readmeText.includes("`nodeType`"), true);
   assert.equal(readmeText.includes("views.byFile.<filePath>[]"), true);
   assert.equal(readmeText.includes("commentIdsInOrder"), true);
   assert.equal(readmeText.includes("commentAuthorsInOrder"), true);

@@ -31,9 +31,8 @@ If you downloaded source from GitHub (**Code > Download ZIP**) or cloned the rep
    - **Debug** (off by default; shows the status/error panel at the bottom)
    - **Verbose diagnostics** (off by default; captures detailed skip decisions and performance metrics)
 5. Click **Test Selection** to highlight and number conversations selected by the current filters.
-6. Click **Give AI Context** to copy a ready-to-use prompt (instructions + schema v2.1-factual JSON).
-7. Click **Copy JSON** or **Download JSON**.
-8. In Debug mode, use **Copy Diagnostics** / **Download Diagnostics** after a run to inspect parser decisions.
+6. Click **Copy JSON** or **Download JSON**.
+7. In Debug mode, use **Copy Diagnostics** / **Download Diagnostics** after a run to inspect parser decisions.
 
 ## User Notes
 - Supported pages: Gitea PR URLs like `/OWNER/REPO/pulls/123` on hosts starting with `git`.
@@ -49,16 +48,22 @@ Popup settings are stored in `chrome.storage.local` and restored each time the p
 - Use shortened JSON keys
 - Minify JSON output
 - Script stats
-- Give AI Context
 - Debug
 - Verbose diagnostics
 
 Theme preference is stored separately via `localStorage` key `gitea-pr-review-exporter-theme`.
 
-Single-conversation copy (`Copy` button on a thread) resolves `actors.currentUser.username` in this order:
+Single-conversation copy (`Copy` button on a thread or standalone comment) resolves `actors.currentUser.username` in this order:
 1. Popup settings value from `chrome.storage.local` (`gitea-pr-review-exporter-popup-settings-v2.userName`) when non-empty.
 2. Page/header detection (`detectDefaultGitUserName`, same resolver used by the full PR flow default user lookup).
 3. `null` when still unavailable.
+
+Per-thread manual selection overrides live on the conversation blocks themselves and on standalone comment nodes:
+- The per-thread toggle switches between `select` and `deselect`.
+- When selected, the thread or comment gets a visible manual highlight in the page so it is obvious which items are pinned into the export.
+- Overrides are stored in `chrome.storage.local` under `gitea-pr-review-exporter-manual-selections-v1`, grouped by PR key and conversation key.
+- Manual overrides take precedence over the popup filters in both export and test-selection flows.
+- The inline `Copy` button now uses the standard Gitea button look instead of the previous custom green treatment.
 
 ## Diagnostics
 After any scrape/test run, diagnostics are available through popup debug actions:
@@ -154,14 +159,71 @@ Popup logic is split into focused files under `popup/`:
 - `popup/popup.html`: popup markup entrypoint referenced by the manifest
 - `popup/state.js`: shared DOM refs, constants, and required element checks
 - `popup/ui.js`: visual state, status/error updates, and interaction micro-feedback
-- `popup/system.js`: tab/runtime messaging, URL/file helpers, theme/settings persistence
-- `popup/core.js`: feature workflows for scrape/export/test/diagnostics/download
+- `popup/system/messaging.js`: content-script injection and runtime messaging helpers
+- `popup/system/tab.js`: active-tab lookup, PR validation, and scrape orchestration
+- `popup/system.js`: PR URL/context helpers and diff URL construction
+- `popup/system-filenames.js`: popup filename and timestamp helpers
+- `popup/system/theme.js`: theme preference persistence and application
+- `popup/system/settings.js`: popup settings persistence and active-option summary
+- `popup/system/zip.js`: ZIP archive helpers for bundled downloads
+- `popup/features/header-context.js`: popup header context, Jira links, and selected-count rendering
+- `popup/features/pr-tab-guards.js`: shared popup active-PR tab validation helpers
+- `popup/features/bootstrap.js`: popup startup and active-tab context hydration
+- `popup/features/export-data.js`: serialized export payload building and JSON download plumbing
+- `popup/features/diagnostics-payload.js`: diagnostics payload enrichment and filename shaping
+- `popup/features/test-data.js`: shared popup test request payload and status text helpers
+- `popup/features/export-status.js`: export status text and savings hint helpers
+- `popup/features/diff-download-data.js`: low-level diff fetch helper used by diff and bundle downloads
+- `popup/features/export-metrics.js`: output-size comparison helpers for JSON export modes
+- `popup/features/export.js`: JSON copy/download workflow and serialization decisions
+- `popup/features/diff-download.js`: PR diff download workflow
+- `popup/features/bundle-download-data.js`: combined JSON + diff ZIP download plumbing
+- `popup/features/bundle-download.js`: combined JSON + diff bundle workflow
+- `popup/features/testing.js`: selection/highlight test workflows
+- `popup/features/diagnostics.js`: diagnostics copy/download workflow
+- `popup/core.js`: thin compatibility shell kept intentionally small
 - `popup/main.js`: startup wiring and event binding
 
 Content script is split into core + router files:
+- `content/runtime-state.js`: shared action constants and runtime globals used by content modules
 - `content/content.js`: content runtime registry and exported API wiring
-- `content/scrape-core.js`: scrape/test pipeline and schema envelope logic
-- `content/helpers.js`: context parsing, highlighting, single-copy UI, extraction helpers, and utilities
+- `content/scrape-core.js`: scrape/test orchestration, block collection, and filtering
+- `content/dom-utils.js`: low-level DOM/text normalization helpers shared across content modules
+- `content/identity-utils.js`: shared username, Jira link, and Gitea URL identity helpers
+- `content/standalone-comment-utils.js`: shared predicate that identifies standalone timeline comments
+- `content/conversation-expansion.js`: page-level and thread-level expansion of hidden/outdated conversation content
+- `content/context/pr-context.js`: PR owner/repo/branch context detection
+- `content/context/user-detection.js`: default-user detection and Jira link extraction
+- `content/page-participants.js`: PR author, reviewer, and sidebar participant detection
+- `content/highlight/rendering.js`: in-page selection highlights, debug overlay, and highlight styles
+- `content/selection-io.js`: popup-settings access, clipboard writes, and temporary button-state helpers
+- `content/manual-selection-export.js`: manual-selection export preset copy flow
+- `content/selection-copy.js`: single-conversation JSON copy flow
+- `content/selection-state.js`: manual-selection keying, hydration, persistence, and state lookup helpers
+- `content/selection-summary-ui.js`: floating summary/export shell, styles, and preset controls
+- `content/selection-summary.js`: summary counting and copyable-conversation resolution
+- `content/selection-visuals.js`: action-button labels, styles, selection visual state, and manual highlight rendering
+- `content/selection-actions-bootstrap.js`: action-button wiring, DOM target resolution, and mutation-observer setup
+- `content/selection-actions.js`: manual-selection state toggling and refresh behavior
+- `content/code-context.js`: diff-table code context extraction helpers
+- `content/comment-extraction.js`: comment node collection and normalization
+- `content/conversation-extraction.js`: conversation metadata extraction from review threads
+- `content/conversation-collection-threaded.js`: threaded collection pass used by the scrape orchestrator
+- `content/conversation-collection-standalone.js`: standalone comment collection pass used by the scrape orchestrator
+- `content/conversation-collection.js`: collection-pass entrypoint used by the scrape orchestrator
+- `content/conversation-selection.js`: resolution detection, last-comment checks, and conversation selection rules
+- `content/standalone-comments.js`: standalone timeline-comment discovery and conversation-shape normalization
+- `content/scrape-state.js`: scrape option normalization, collection counters, completeness, and diagnostics bookkeeping
+- `content/diagnostics.js`: scrape diagnostics payload building
+- `content/export-participants.js`: export participant payload assembly and serialized export-option shaping
+- `content/export-views.js`: deterministic export view/index payload construction and sort helpers
+- `content/export-normalization.js`: export property ordering and normalization helpers
+- `content/export-fingerprint.js`: deterministic export fingerprint hashing and canonical stringification
+- `content/export-conversation-facts-utils.js`: shared conversation export utility helpers
+- `content/export-conversation-facts.js`: conversation enrichment and aggregate counts
+- `content/export-envelope-sections.js`: shared export-envelope section assembly helpers
+- `content/conversation-selection-utils.js`: shared last-comment and resolution helpers
+- `content/export-envelope.js`: factual export schema assembly, counts, views, normalization, and fingerprinting
 - `content/content-router.js`: message routing and bootstrap wiring
 
 Inside the content runtime, responsibilities are organized by facades:
@@ -255,6 +317,7 @@ By default, `filtersApplied` and `stats` are omitted unless **Script stats** is 
   "conversations": [
     {
       "conversationId": "123456",
+      "nodeType": "change",
       "filePath": "backend/service/src/main/java/com/example/app/SampleService.java",
       "threadUrl": "https://git.example.com/example-org/example-repo/pulls/987/files#issuecomment-123456",
       "resolved": false,
@@ -326,13 +389,14 @@ By default, `filtersApplied` and `stats` are omitted unless **Script stats** is 
 ### Property Ordering Contract
 - Top-level export object order (`pull_request`): `schemaVersion`, `scope`, `source`, `actors`, `identityResolution`, `participants`, `exportOptions`, `completeness`, `ordering`, `counts`, `views`, `conversations`, then additional optional top-level fields.
 - Top-level export object order (`single_conversation`): `schemaVersion`, `scope`, `source`, `actors`, `identityResolution`, `conversations`, `exportFingerprint`.
-- Conversation object order (`pull_request`): `conversationId`, `filePath`, `threadUrl`, `resolved`, `outdated`, `selectionReason`, `lineNew`, `lineOld`, `diffSide`, `hunkHeader`, `codeContext`, `rootComment`, `comments`, `commentIdsInOrder`, `commentAuthorsInOrder`, `commentCount`, `hasReplies`, `lastCommentId`, `lastCommentAuthor`, `lastCommentAuthorIsCurrentUser`, `lastCommentAuthorIsPrAuthor`, `lastCommentAt`, `lastCommentUrl`, `lastCommentByOtherUser`, then additional optional fields.
+- Conversation object order (`pull_request`): `conversationId`, `nodeType`, `filePath`, `threadUrl`, `resolved`, `outdated`, `selectionReason`, `lineNew`, `lineOld`, `diffSide`, `hunkHeader`, `codeContext`, `rootComment`, `comments`, `commentIdsInOrder`, `commentAuthorsInOrder`, `commentCount`, `hasReplies`, `lastCommentId`, `lastCommentAuthor`, `lastCommentAuthorIsCurrentUser`, `lastCommentAuthorIsPrAuthor`, `lastCommentAt`, `lastCommentUrl`, `lastCommentByOtherUser`, then additional optional fields.
 - Conversation object order (`single_conversation`): same shape, but omits `commentIdsInOrder` and `commentAuthorsInOrder`.
 - Comment objects (`rootComment`, `comments[]`) are key-sorted alphabetically.
 - `codeContext` object order is `hunkHeader`, then `lines`; each line entry order is `type`, `oldLine`, `newLine`, `marker`, `text`.
 
 ### Conversation Field Meanings
 - `conversationId`: Thread identifier (normalized when possible).
+- `nodeType`: Node classification for the exported conversation (`comment`, `change`, `outdated_change`, or `resolved_change`).
 - `filePath`: Repository path of the commented file.
 - `lineNew` / `lineOld` / `diffSide`: additive location hints for agent processing.
 - `codeContext`: optional factual diff context from visible table rows (`hunkHeader` + bounded `lines[]`); omitted when unavailable.
@@ -350,7 +414,7 @@ By default, `filtersApplied` and `stats` are omitted unless **Script stats** is 
 - `lastComment*`: compact factual fields computed from ordered comments.
 - `lastCommentByOtherUser`: strict identity check against `actors.currentUser.username`.
 - `selectionReason`: inclusion reason for downstream auditing.
-  Allowed values: `included_by_default`, `included_resolved`, `included_outdated`, `included_last_comment_by_current_user`.
+  Allowed values: `included_by_default`, `included_resolved`, `included_outdated`, `included_last_comment_by_current_user`, `included_manual_override`.
 
 ### Ordering Guarantees
 - `views.*` guarantees apply to `pull_request` exports (single-conversation exports omit `views`).
@@ -393,7 +457,7 @@ Manifest permissions and purpose:
 - `tabs`: read active-tab URL/title for validation and filenames
 - `scripting`: execute extension-owned scripts on the active Gitea PR tab to run scraping/highlight/export workflows
 - `downloads`: support JSON/TXT file download
-- `clipboardWrite`: copy JSON/AI context to clipboard
+- `clipboardWrite`: copy JSON to clipboard
 - `storage`: persist popup settings
 
 ## Technical Notes and Developer Documentation
@@ -431,6 +495,7 @@ This branch refines the exporter contract to be stricter, leaner, and factual-on
   - `included_resolved`
   - `included_outdated`
   - `included_last_comment_by_current_user`
+  - `included_manual_override`
 
 #### Diff Grounding
 - `codeContext` is extracted only from visible diff table rows on the PR page.
