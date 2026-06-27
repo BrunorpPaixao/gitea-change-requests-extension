@@ -22,7 +22,6 @@ function setBusy(isBusy) {
   shortKeysCheckbox.disabled = isBusy;
   minifyJsonCheckbox.disabled = isBusy;
   includeScriptStatsCheckbox.disabled = isBusy;
-  giveAiContextCheckbox.disabled = isBusy;
   debugCheckbox.disabled = isBusy;
   verboseDiagnosticsCheckbox.disabled = isBusy;
   copyDiagnosticsBtn.disabled = isBusy;

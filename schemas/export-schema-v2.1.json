@@ -163,6 +163,7 @@
         "type": "object",
         "required": [
           "conversationId",
+          "nodeType",
           "filePath",
           "lineNew",
           "lineOld",
@@ -185,6 +186,10 @@
         ],
         "properties": {
           "conversationId": { "type": ["string", "null"] },
+          "nodeType": {
+            "type": "string",
+            "enum": ["comment", "change", "outdated_change", "resolved_change"]
+          },
           "filePath": { "type": ["string", "null"] },
           "lineNew": { "type": ["integer", "null"] },
           "lineOld": { "type": ["integer", "null"] },
@@ -248,7 +253,8 @@
               "included_by_default",
               "included_resolved",
               "included_outdated",
-              "included_last_comment_by_current_user"
+              "included_last_comment_by_current_user",
+              "included_manual_override"
             ]
           }
         },

@@ -92,6 +92,7 @@
   "conversations": [
     {
       "conversationId": "123456",
+      "nodeType": "change",
       "filePath": "backend/service/src/main/java/com/example/app/NotificationService.java",
       "threadUrl": "https://git.example.com/example-org/example-repo/pulls/987/files#issuecomment-123456",
       "resolved": false,

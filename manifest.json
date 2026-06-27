@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Gitea PR Review Exporter",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Export Gitea pull request review conversation nodes (Change requests, Comments) as JSON.",
   "homepage_url": "https://github.com/BrunorpPaixao/gitea-change-requests-extension",
   "permissions": ["activeTab", "tabs", "downloads", "clipboardWrite", "storage", "scripting"],
@@ -18,19 +18,5 @@
       "16": "icons/icon-16.png",
       "32": "icons/icon-32.png"
     }
-  },
-  "content_scripts": [
-    {
-      "matches": ["http://*/*/*/pulls/*", "https://*/*/*/pulls/*"],
-      "include_globs": ["http://git*/*/*/pulls/*", "https://git*/*/*/pulls/*"],
-      "js": [
-        "shared/export-serializer.js",
-        "content/content.js",
-        "content/scrape-core.js",
-        "content/helpers.js",
-        "content/content-router.js"
-      ],
-      "run_at": "document_idle"
-    }
-  ]
+  }
 }

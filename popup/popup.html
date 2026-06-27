@@ -38,6 +38,10 @@
 
       <section class="panel">
         <p id="summary" class="summary">No scrape run yet.</p>
+        <div class="selection-count-row" aria-live="polite">
+          <span class="selection-count-label">Selected PR nodes</span>
+          <span id="selectedNodeCount" class="selection-count-pill" title="Current manual selection count">0</span>
+        </div>
         <div class="filters">
           <label class="field-label" for="userNameInput">Git user name</label>
           <input id="userNameInput" type="text" placeholder="Detected from page" autocomplete="off" />
@@ -55,10 +59,6 @@
             <label class="check-row" for="ignoreCommentsCheckbox" title="Exclude standalone timeline comments from exports and tests.">
               <input id="ignoreCommentsCheckbox" type="checkbox" checked title="Exclude standalone timeline comments from exports and tests." />
               <span>Ignore comments</span>
-            </label>
-            <label class="check-row" for="giveAiContextCheckbox" title="Export AI-ready instructions plus schema v2 data instead of plain JSON.">
-              <input id="giveAiContextCheckbox" type="checkbox" title="Export AI-ready instructions plus schema v2 data instead of plain JSON." />
-              <span>Give AI Context</span>
             </label>
             <label class="check-row" for="ignoreLastCommentCheckbox" data-gpre-last-filter="1" title="Exclude conversations where the most recent comment is from the selected Git user.">
               <input id="ignoreLastCommentCheckbox" type="checkbox" checked title="Exclude conversations where the most recent comment is from the selected Git user." />
@@ -227,9 +227,31 @@
     </main>
 
     <script src="../shared/export-serializer.js"></script>
+    <script src="../shared/content-script-files.js"></script>
     <script src="state.js"></script>
     <script src="ui.js"></script>
+    <script src="system/theme.js"></script>
+    <script src="system/settings.js"></script>
+    <script src="system/zip.js"></script>
+    <script src="system/messaging.js"></script>
+    <script src="system/tab.js"></script>
     <script src="system.js"></script>
+    <script src="system-filenames.js"></script>
+    <script src="features/header-context.js"></script>
+    <script src="features/pr-tab-guards.js"></script>
+    <script src="features/export-metrics.js"></script>
+    <script src="features/export-status.js"></script>
+    <script src="features/bootstrap.js"></script>
+    <script src="features/export-data.js"></script>
+    <script src="features/diagnostics-payload.js"></script>
+    <script src="features/test-data.js"></script>
+    <script src="features/export.js"></script>
+    <script src="features/diff-download.js"></script>
+    <script src="features/diff-download-data.js"></script>
+    <script src="features/bundle-download-data.js"></script>
+    <script src="features/bundle-download.js"></script>
+    <script src="features/testing.js"></script>
+    <script src="features/diagnostics.js"></script>
     <script src="core.js"></script>
     <script src="main.js"></script>
   </body>

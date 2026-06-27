@@ -19,7 +19,6 @@ const requiredPopupIds = [
   "shortKeysCheckbox",
   "minifyJsonCheckbox",
   "includeScriptStatsCheckbox",
-  "giveAiContextCheckbox",
   "ignoreLastCommentCheckbox",
   "debugCheckbox",
   "verboseDiagnosticsCheckbox",

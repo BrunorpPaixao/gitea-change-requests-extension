@@ -14,6 +14,7 @@
     GET_PR_CONTEXT_ACTION,
     GET_PR_JIRA_LINKS_ACTION,
     GET_LAST_DIAGNOSTICS_ACTION,
+    GET_MANUAL_SELECTION_SUMMARY_ACTION,
     TEST_SELECTION_ACTION,
     TEST_HIGHLIGHTS_ACTION,
   } = core.constants;
@@ -71,6 +72,13 @@
         sendResponse({ ok: true, result });
       }
       return;
+    }
+
+    if (message.type === GET_MANUAL_SELECTION_SUMMARY_ACTION) {
+      Promise.resolve(core.getManualSelectionSummary())
+        .then((result) => sendResponse({ ok: true, result }))
+        .catch((error) => sendResponse({ ok: false, error: error.message || String(error) }));
+      return true;
     }
 
     if (message.type === TEST_SELECTION_ACTION) {

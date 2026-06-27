@@ -29,6 +29,7 @@ const include = [
   "popup",
   "styles.css",
   "content",
+  "shared",
   "icons",
 ];
 

@@ -13,6 +13,7 @@ const downloadBundleState = document.getElementById("downloadBundleState");
 const testSelectionBtn = document.getElementById("testSelectionBtn");
 const testHighlightsBtn = document.getElementById("testHighlightsBtn");
 const summaryEl = document.getElementById("summary");
+const selectedNodeCountEl = document.getElementById("selectedNodeCount");
 const activeFiltersEl = document.getElementById("activeFilters");
 const statusEl = document.getElementById("status");
 const errorEl = document.getElementById("error");
@@ -27,7 +28,6 @@ const ignoreCommentsCheckbox = document.getElementById("ignoreCommentsCheckbox")
 const shortKeysCheckbox = document.getElementById("shortKeysCheckbox");
 const minifyJsonCheckbox = document.getElementById("minifyJsonCheckbox");
 const includeScriptStatsCheckbox = document.getElementById("includeScriptStatsCheckbox");
-const giveAiContextCheckbox = document.getElementById("giveAiContextCheckbox");
 const debugCheckbox = document.getElementById("debugCheckbox");
 const verboseDiagnosticsCheckbox = document.getElementById("verboseDiagnosticsCheckbox");
 const diagnosticsActions = document.getElementById("diagnosticsActions");
@@ -60,7 +60,6 @@ const DEFAULT_POPUP_SETTINGS = {
   shortKeys: true,
   minifyJsonOutput: false,
   includeScriptStats: false,
-  giveAiContext: false,
   debug: false,
   verboseDiagnostics: false,
 };
@@ -76,6 +75,7 @@ const REQUIRED_UI_ELEMENTS = [
   ["testSelectionBtn", testSelectionBtn],
   ["testHighlightsBtn", testHighlightsBtn],
   ["summaryEl", summaryEl],
+  ["selectedNodeCountEl", selectedNodeCountEl],
   ["statusEl", statusEl],
   ["errorEl", errorEl],
   ["feedbackPanel", feedbackPanel],
@@ -89,7 +89,6 @@ const REQUIRED_UI_ELEMENTS = [
   ["shortKeysCheckbox", shortKeysCheckbox],
   ["minifyJsonCheckbox", minifyJsonCheckbox],
   ["includeScriptStatsCheckbox", includeScriptStatsCheckbox],
-  ["giveAiContextCheckbox", giveAiContextCheckbox],
   ["debugCheckbox", debugCheckbox],
   ["verboseDiagnosticsCheckbox", verboseDiagnosticsCheckbox],
   ["diagnosticsActions", diagnosticsActions],
