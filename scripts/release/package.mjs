@@ -19,7 +19,7 @@ if (!packageName || !packageVersion) {
   throw new Error("package.json must include both `name` and `version`.");
 }
 
-const outFile = resolve(distDir, `${packageName}-v${packageVersion}.zip`);
+const outFile = resolve(distDir, `${packageName}.zip`);
 if (existsSync(outFile)) {
   execFileSync("rm", ["-f", outFile], { stdio: "inherit" });
 }
@@ -34,7 +34,7 @@ const include = [
 ];
 
 try {
-  execFileSync("zip", ["-r", outFile, ...include], { stdio: "inherit" });
+  execFileSync("zip", ["-r", outFile, ...include, "-x", "*/AGENTS.md"], { stdio: "inherit" });
 } catch (error) {
   throw new Error(
     "Failed to package extension. Ensure `zip` is installed and run from project root."

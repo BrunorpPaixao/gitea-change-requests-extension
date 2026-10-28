@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/review-queue-v1.schema.json",
+  "title": "Gitea factual review queue v1",
+  "type": "object",
+  "required": ["format", "schemaVersion", "scope", "source", "actors", "identityResolution", "filters", "completeness", "conversations"],
+  "properties": {
+    "format": { "const": "gpre.review_queue.v1" },
+    "schemaVersion": { "const": "2.1-factual" },
+    "scope": { "type": "object", "properties": { "type": { "enum": ["pull_request", "single_conversation"] } }, "required": ["type"] },
+    "source": { "type": "object", "properties": { "url": { "type": "string" } }, "required": ["url"] },
+    "actors": { "type": "object" },
+    "identityResolution": { "type": "object" },
+    "filters": { "type": "object" },
+    "completeness": { "type": "object", "properties": { "allThreadsLoaded": { "type": "boolean" }, "hiddenThreadsExpanded": { "type": "boolean" }, "outdatedSectionsExpanded": { "type": "boolean" }, "parseWarnings": { "type": "array" } }, "required": ["allThreadsLoaded", "hiddenThreadsExpanded", "outdatedSectionsExpanded", "parseWarnings"] },
+    "exportFingerprint": { "type": ["string", "null"] },
+    "conversations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["conversationId", "threadUrl", "rootComment", "comments"],
+        "properties": {
+          "conversationId": { "type": ["string", "null"] },
+          "threadUrl": { "type": ["string", "null"] },
+          "rootComment": { "type": "object", "properties": { "text": { "type": "string" } }, "required": ["text"] },
+          "comments": { "type": "array", "items": { "type": "object", "properties": { "text": { "type": "string" } }, "required": ["text"] } }
+        }
+      }
+    }
+  }
+}

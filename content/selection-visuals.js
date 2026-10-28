@@ -114,10 +114,42 @@ function ensureConversationActionButtonStyles() {
       .${MANUAL_SELECTION_BUTTON_CLASS} {
         display: inline-flex !important;
         align-items: center !important;
+        justify-content: center !important;
         gap: 6px !important;
-        margin-right: 8px !important;
+        min-height: 28px !important;
+        padding: 6px 9px !important;
+        margin: 2px 6px 2px 0 !important;
         margin-left: 0 !important;
+        border: 1px solid color-mix(in srgb, var(--color-secondary, #697586) 45%, transparent) !important;
+        border-radius: 6px !important;
+        background: var(--color-button, #29313b) !important;
+        color: var(--color-text, #e6edf3) !important;
+        box-shadow: none !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
+        line-height: 1 !important;
+        letter-spacing: 0.01em !important;
+        text-transform: none !important;
         vertical-align: middle !important;
+        cursor: pointer !important;
+        transition: transform 140ms cubic-bezier(0.25, 1, 0.5, 1),
+          background-color 160ms cubic-bezier(0.25, 1, 0.5, 1),
+          border-color 160ms cubic-bezier(0.25, 1, 0.5, 1) !important;
+      }
+      .${SINGLE_COPY_BUTTON_CLASS}:hover:not(:disabled),
+      .${MANUAL_SELECTION_BUTTON_CLASS}:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--color-button, #29313b) 82%, var(--color-primary, #2fb170)) !important;
+        border-color: var(--color-primary, #2fb170) !important;
+        transform: translateY(-1px) !important;
+      }
+      .${SINGLE_COPY_BUTTON_CLASS}:active:not(:disabled),
+      .${MANUAL_SELECTION_BUTTON_CLASS}:active:not(:disabled) {
+        transform: scale(0.97) !important;
+      }
+      .${SINGLE_COPY_BUTTON_CLASS}:focus-visible,
+      .${MANUAL_SELECTION_BUTTON_CLASS}:focus-visible {
+        outline: 2px solid var(--color-primary, #2fb170) !important;
+        outline-offset: 2px !important;
       }
       .${SINGLE_COPY_BUTTON_CLASS} .gpre-copy-single-icon {
         width: 14px !important;
@@ -127,12 +159,66 @@ function ensureConversationActionButtonStyles() {
         justify-content: center !important;
       }
       .${SINGLE_COPY_BUTTON_CLASS}:disabled {
-        opacity: 0.75 !important;
+        opacity: 0.65 !important;
         transform: none !important;
-        cursor: wait !important;
+        cursor: progress !important;
+      }
+      .${SINGLE_COPY_BUTTON_CLASS}[data-gpre-feedback="success"],
+      .${SINGLE_COPY_BUTTON_CLASS}[data-gpre-feedback="error"] {
+        border-color: var(--color-primary, #2fb170) !important;
+      }
+      .${SINGLE_COPY_BUTTON_CLASS}[data-gpre-feedback="success"]::before {
+        content: "✓";
+        color: var(--color-primary, #2fb170);
+        font-weight: 800;
+      }
+      .${SINGLE_COPY_BUTTON_CLASS}[data-gpre-feedback="error"] {
+        border-color: var(--color-red, #cf5f5f) !important;
+      }
+      .${SINGLE_COPY_BUTTON_CLASS}[data-gpre-feedback="error"]::before {
+        content: "!";
+        color: var(--color-red, #cf5f5f);
+        font-weight: 800;
+      }
+      .${MANUAL_SELECTION_BUTTON_CLASS} {
+        text-transform: capitalize !important;
+      }
+      .${MANUAL_SELECTION_BUTTON_CLASS}::before {
+        content: "+";
+        width: 12px;
+        text-align: center;
+        font-size: 15px;
+        line-height: 10px;
       }
       .${MANUAL_SELECTION_BUTTON_CLASS}.is-selected {
+        border-color: var(--color-primary, #2fb170) !important;
+        background: color-mix(in srgb, var(--color-button, #29313b) 78%, var(--color-primary, #2fb170)) !important;
+        color: var(--color-text, #e6edf3) !important;
         font-weight: 700 !important;
+      }
+      .${MANUAL_SELECTION_BUTTON_CLASS}.is-selected:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--color-button, #29313b) 68%, var(--color-primary, #2fb170)) !important;
+      }
+      .${MANUAL_SELECTION_BUTTON_CLASS}.is-selected::before {
+        content: "✓";
+        font-size: 12px;
+      }
+      .${MANUAL_SELECTION_BUTTON_CLASS}:disabled {
+        opacity: 0.65 !important;
+        transform: none !important;
+        cursor: progress !important;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .${SINGLE_COPY_BUTTON_CLASS},
+        .${MANUAL_SELECTION_BUTTON_CLASS} {
+          transition: none !important;
+        }
+        .${SINGLE_COPY_BUTTON_CLASS}:hover:not(:disabled),
+        .${MANUAL_SELECTION_BUTTON_CLASS}:hover:not(:disabled),
+        .${SINGLE_COPY_BUTTON_CLASS}:active:not(:disabled),
+        .${MANUAL_SELECTION_BUTTON_CLASS}:active:not(:disabled) {
+          transform: none !important;
+        }
       }
       .${MANUAL_SELECTION_SELECTED_CLASS} {
         position: relative !important;

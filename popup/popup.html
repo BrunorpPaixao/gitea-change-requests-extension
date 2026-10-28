@@ -38,6 +38,14 @@
 
       <section class="panel">
         <p id="summary" class="summary">No scrape run yet.</p>
+        <p id="coverageStatus" class="coverage-status" aria-live="polite">Preview a selection to check export coverage.</p>
+        <p id="resultDetails" class="result-details"></p>
+        <p id="activeFilters" class="result-details"></p>
+        <button id="testSelectionBtn" class="preview-btn" type="button">Preview selection</button>
+        <section id="feedbackPanel" class="feedback" aria-live="polite" hidden>
+          <p id="status" class="status"></p>
+          <p id="error" class="error"></p>
+        </section>
         <div class="selection-count-row" aria-live="polite">
           <span class="selection-count-label">Selected PR nodes</span>
           <span id="selectedNodeCount" class="selection-count-pill" title="Current manual selection count">0</span>
@@ -133,12 +141,12 @@
         <div id="jsonActionsPanel" class="action-tab-panel is-active" role="tabpanel" aria-labelledby="actionTabJson">
           <section class="copy-presets-card">
             <div class="copy-presets-head">
-              <p class="copy-presets-title">Copy JSON Presets</p>
-              <span class="copy-presets-subtitle">One-click clipboard formats</span>
+              <p class="copy-presets-title">Copy JSON</p>
+              <span class="copy-presets-subtitle">Use current settings or choose a format</span>
             </div>
             <div class="copy-actions">
               <button id="copyBtn" class="quick-json-btn" type="button" title="Copy JSON with current checkbox settings.">
-                Normal
+                Copy with current settings
               </button>
               <button id="jsonMinBtn" class="quick-json-btn" type="button" title="Copy minified JSON.">
                 Minified
@@ -149,7 +157,14 @@
               <button id="jsonMinShortBtn" class="quick-json-btn" type="button" title="Copy minified JSON with shortened keys.">
                 Minified + Shortened
               </button>
+              <button id="copyQueueBtn" class="quick-json-btn" type="button" title="Copy a compact factual review queue for an explicitly invoked AI consumer.">
+                Copy review queue
+              </button>
+              <button id="copyChangesBtn" class="quick-json-btn" type="button" title="Copy changed conversations since the last complete export with these filters.">
+                Copy changes
+              </button>
             </div>
+            <button id="clearComparisonBtn" class="quick-json-btn" type="button">Clear comparison history for this PR</button>
           </section>
         </div>
 
@@ -186,6 +201,7 @@
               </button>
             </div>
           </section>
+          <button id="downloadQueueBtn" class="quick-json-btn download-queue-btn" type="button">Download review queue JSON</button>
         </div>
       </div>
 
@@ -194,11 +210,6 @@
           <p class="debug-card-title">Debug Tools</p>
           <span class="debug-card-subtitle">Diagnostics and checks</span>
         </div>
-
-        <section id="feedbackPanel" class="feedback">
-          <p id="status" class="status" aria-live="polite"></p>
-          <p id="error" class="error" aria-live="polite"></p>
-        </section>
 
         <div id="diagnosticsActions" class="diagnostics-actions">
           <button id="copyDiagnosticsBtn" class="icon-btn" type="button" title="Copy the latest diagnostics payload as JSON.">
@@ -220,7 +231,6 @@
         </div>
 
         <div class="test-actions">
-          <button id="testSelectionBtn" class="split-btn" type="button">Test Selection</button>
           <button id="testHighlightsBtn" class="split-btn" type="button">Test Highlights</button>
         </div>
       </section>
@@ -241,8 +251,11 @@
     <script src="features/pr-tab-guards.js"></script>
     <script src="features/export-metrics.js"></script>
     <script src="features/export-status.js"></script>
+    <script src="features/result-summary.js"></script>
     <script src="features/bootstrap.js"></script>
     <script src="features/export-data.js"></script>
+    <script src="features/review-queue.js"></script>
+    <script src="features/incremental.js"></script>
     <script src="features/diagnostics-payload.js"></script>
     <script src="features/test-data.js"></script>
     <script src="features/export.js"></script>

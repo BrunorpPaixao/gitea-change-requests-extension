@@ -10,9 +10,9 @@
  * @returns {Promise<object>} Export metadata and serialized text.
  */
 async function buildExportData(actionOptions = {}) {
-  const { tab, exportPayload } = await runScrape();
+  const { tab, exportPayload, coverage } = await runScrape();
   const conversations = Array.isArray(exportPayload.conversations) ? exportPayload.conversations : [];
-  summaryEl.textContent = `Conversations found: ${conversations.length}`;
+  renderResultSummary(conversations.length, coverage);
   const shortKeys =
     actionOptions?.serializationOverrides?.shortKeys === undefined
       ? shortKeysCheckbox?.checked !== false
@@ -34,11 +34,13 @@ async function buildExportData(actionOptions = {}) {
   });
   return {
     tab,
+    canonicalPayload: exportPayload,
     outputText,
     filename,
     conversationCount: conversations.length,
     mimeType,
     sizeMetrics,
+    coverage,
   };
 }
 

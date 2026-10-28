@@ -17,8 +17,12 @@ async function getValidatedActivePrTab(message) {
   if (!isLikelyGiteaPrTab(tab.url || "")) {
     throw new Error(
       message ||
-        "Open a Gitea pull request page ending with /OWNER/REPO/pulls/NUMBER on a host that starts with git."
+        "Open a Gitea pull request page ending with /OWNER/REPO/pulls/NUMBER."
     );
+  }
+  const contextResponse = await sendMessageToPrTab(tab.id, { type: "GET_PR_CONTEXT" });
+  if (!contextResponse?.ok) {
+    throw new Error(contextResponse?.error || "This page is not a supported Gitea pull request.");
   }
   return tab;
 }

@@ -8,7 +8,11 @@ function setBusy(isBusy) {
   jsonMinBtn.disabled = isBusy;
   jsonShortBtn.disabled = isBusy;
   jsonMinShortBtn.disabled = isBusy;
+  copyQueueBtn.disabled = isBusy;
+  copyChangesBtn.disabled = isBusy;
+  clearComparisonBtn.disabled = isBusy;
   downloadBtn.disabled = isBusy;
+  downloadQueueBtn.disabled = isBusy;
   downloadDiffBtn.disabled = isBusy;
   downloadBundleWrapper.classList.toggle("is-disabled", isBusy);
   downloadBundleWrapper.setAttribute("aria-disabled", isBusy ? "true" : "false");
@@ -137,6 +141,7 @@ function markDiagnosticsReadyCue() {
 function setStatus(message) {
   const value = message || "";
   statusEl.textContent = value;
+  feedbackPanel.hidden = !value && !errorEl.textContent;
   statusEl.classList.remove("is-updated");
   if (value) {
     void statusEl.offsetWidth;
@@ -147,6 +152,7 @@ function setStatus(message) {
 function setError(message) {
   const value = message || "";
   errorEl.textContent = value;
+  feedbackPanel.hidden = !value && !statusEl.textContent;
   errorEl.classList.remove("is-updated");
   if (value) {
     void errorEl.offsetWidth;

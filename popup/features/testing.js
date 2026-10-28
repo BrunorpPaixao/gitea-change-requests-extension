@@ -8,8 +8,8 @@
  */
 async function handleTestSelection() {
   setBusy(true);
-  setTestButtonState(testSelectionBtn, true, "Testing...");
-  setStatus("Testing selection on page...");
+  setTestButtonState(testSelectionBtn, true, "Previewing...");
+  setStatus("Previewing selection on page...");
   setError("");
 
   try {
@@ -29,8 +29,13 @@ async function handleTestSelection() {
     markDiagnosticsReadyCue();
     triggerActionPulse(testSelectionBtn);
     showSuccessBadge(testSelectionBtn, "Done");
-    summaryEl.textContent = `Conversations found: ${count}`;
-    setStatus(buildSelectionTestStatusText(count, stats));
+    renderResultSummary(count, {
+      stats,
+      completeness: response.completeness,
+      currentUserKnown: response.currentUserKnown,
+      manualIncluded: response.manualIncluded,
+    });
+    setStatus(`Preview highlighted ${count} selected conversations.`);
   } catch (error) {
     setStatus("");
     setError(error.message || String(error));

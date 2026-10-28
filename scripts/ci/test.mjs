@@ -6,13 +6,20 @@ import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
 const popupHtml = readFileSync("popup/popup.html", "utf8");
-const contentJs = readFileSync("content/content.js", "utf8");
+const contentJs = readFileSync("content/runtime-state.js", "utf8");
 
 const requiredPopupIds = [
   "userNameInput",
   "jsonMinBtn",
   "jsonShortBtn",
   "jsonMinShortBtn",
+  "copyQueueBtn",
+  "copyChangesBtn",
+  "clearComparisonBtn",
+  "downloadQueueBtn",
+  "coverageStatus",
+  "resultDetails",
+  "testSelectionBtn",
   "ignoreResolvedCheckbox",
   "ignoreOutdatedCheckbox",
   "ignoreCommentsCheckbox",
@@ -53,7 +60,7 @@ for (const action of requiredContentActions) {
   assert.match(
     contentJs,
     new RegExp(action),
-    `content/content.js is missing expected action constant "${action}"`
+    `content/runtime-state.js is missing expected action constant "${action}"`
   );
 }
 

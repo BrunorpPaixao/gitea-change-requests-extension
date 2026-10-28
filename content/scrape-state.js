@@ -250,10 +250,6 @@ function buildFinalCollectionResult(state, conversations, blocks, allBlocks) {
       ? `Scrape runtime ${state.stats.runtimeMs}ms exceeded ${SCRAPE_RUNTIME_WARNING_THRESHOLD_MS}ms threshold.`
       : null;
 
-  if (warning) {
-    pushParseWarning(state, "runtime_guardrail_exceeded");
-    state.completeness.allThreadsLoaded = false;
-  }
   if (state.stats.skippedNoConversationData > 0) {
     state.completeness.allThreadsLoaded = false;
   }

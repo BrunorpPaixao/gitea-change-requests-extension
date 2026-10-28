@@ -1,0 +1,7 @@
+interface:
+  display_name: "Git Changes"
+  short_description: "Validate and apply requested git changes."
+  default_prompt: "Use $git-changes with this Gitea JSON payload or file path to validate and implement included review requests, then draft concise reviewer replies."
+
+policy:
+  allow_implicit_invocation: false

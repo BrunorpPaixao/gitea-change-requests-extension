@@ -35,11 +35,16 @@ function bindSettingsPersistence() {
     await persistPopupSettings();
   };
 
-  userNameInput.addEventListener("input", saveOnChange);
-  ignoreLastCommentCheckbox.addEventListener("change", saveOnChange);
-  ignoreResolvedCheckbox.addEventListener("change", saveOnChange);
-  ignoreOutdatedCheckbox.addEventListener("change", saveOnChange);
-  ignoreCommentsCheckbox.addEventListener("change", saveOnChange);
+  const saveOnFilterChange = async () => {
+    clearResultSummary();
+    await saveOnChange();
+  };
+
+  userNameInput.addEventListener("input", saveOnFilterChange);
+  ignoreLastCommentCheckbox.addEventListener("change", saveOnFilterChange);
+  ignoreResolvedCheckbox.addEventListener("change", saveOnFilterChange);
+  ignoreOutdatedCheckbox.addEventListener("change", saveOnFilterChange);
+  ignoreCommentsCheckbox.addEventListener("change", saveOnFilterChange);
   shortKeysCheckbox.addEventListener("change", saveOnChange);
   minifyJsonCheckbox.addEventListener("change", saveOnChange);
   includeScriptStatsCheckbox.addEventListener("change", saveOnChange);

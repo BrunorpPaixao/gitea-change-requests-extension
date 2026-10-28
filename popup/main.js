@@ -35,10 +35,14 @@ if (missingUiElements.length) {
       },
     });
   });
+  copyQueueBtn.addEventListener("click", () => handleCopyReviewQueue());
+  copyChangesBtn.addEventListener("click", () => handleCopyChanges());
+  clearComparisonBtn.addEventListener("click", () => handleClearComparison());
   downloadBtn.addEventListener("click", (event) => {
     event.stopPropagation();
     handleAction("download");
   });
+  downloadQueueBtn.addEventListener("click", () => handleReviewQueueAction("download"));
   downloadDiffBtn.addEventListener("click", (event) => {
     event.stopPropagation();
     handleDiffDownload();

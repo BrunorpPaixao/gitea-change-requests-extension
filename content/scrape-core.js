@@ -11,23 +11,29 @@ async function scrapeUnresolvedConversations(options) {
 }
 
 async function testSelection(options) {
-  const { conversations, blocks, stats, diagnostics } = await collectConversations(options);
+  const { conversations, blocks, stats, diagnostics, completeness, normalizedOptions } = await collectConversations(options);
   lastDiagnostics = diagnostics;
   HighlightModule.applySelectionHighlights(blocks, blocks);
   if (Boolean(options?.debug)) {
     HighlightModule.renderDebugOverlay(blocks);
   }
-  return { count: conversations.length, stats };
+  return {
+    count: conversations.length,
+    stats,
+    completeness,
+    currentUserKnown: Boolean(normalizedOptions.userName),
+    manualIncluded: conversations.filter((item) => item._selectionReason === "included_manual_override").length,
+  };
 }
 
 async function testHighlights(options) {
-  const { conversations, blocks, allBlocks, stats, diagnostics } = await collectConversations(options);
+  const { conversations, blocks, allBlocks, stats, diagnostics, completeness } = await collectConversations(options);
   lastDiagnostics = diagnostics;
   HighlightModule.applySelectionHighlights(allBlocks, blocks);
   if (Boolean(options?.debug)) {
     HighlightModule.renderDebugOverlay(blocks);
   }
-  return { count: conversations.length, totalBlocks: allBlocks.length, stats };
+  return { count: conversations.length, totalBlocks: allBlocks.length, stats, completeness };
 }
 
 async function collectConversations(options) {

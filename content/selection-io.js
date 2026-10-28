@@ -95,10 +95,15 @@ async function copyTextToClipboard(text) {
  * @param {string} [fallbackLabel] Label restored after timeout.
  */
 function setTemporaryButtonState(button, label, timeoutMs, fallbackLabel = SINGLE_COPY_BASE_LABEL) {
+  clearTimeout(Number(button.dataset.gpreFeedbackTimer || 0));
+  button.setAttribute("data-gpre-feedback", label === "Copied" ? "success" : "error");
   renderSingleCopyButtonLabel(button, label, false);
-  setTimeout(() => {
+  const timer = setTimeout(() => {
+    button.removeAttribute("data-gpre-feedback");
+    delete button.dataset.gpreFeedbackTimer;
     renderSingleCopyButtonLabel(button, fallbackLabel, true);
   }, timeoutMs);
+  button.dataset.gpreFeedbackTimer = String(timer);
 }
 
 /**
@@ -111,10 +116,15 @@ function setTemporaryButtonState(button, label, timeoutMs, fallbackLabel = SINGL
  */
 function setTemporaryManualSelectionExportButtonState(button, label, timeoutMs, fallbackLabel) {
   const restoreLabel = fallbackLabel || button.textContent || "";
+  clearTimeout(Number(button.dataset.gpreFeedbackTimer || 0));
+  button.setAttribute("data-gpre-feedback", label === "Copied" ? "success" : "error");
   button.textContent = label;
-  setTimeout(() => {
+  const timer = setTimeout(() => {
     button.textContent = restoreLabel;
+    button.removeAttribute("data-gpre-feedback");
+    delete button.dataset.gpreFeedbackTimer;
   }, timeoutMs);
+  button.dataset.gpreFeedbackTimer = String(timer);
 }
 
 /**
