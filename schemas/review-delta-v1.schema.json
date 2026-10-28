@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/review-delta-v1.schema.json",
+  "title": "Gitea factual review delta v1",
+  "type": "object",
+  "required": ["format", "schemaVersion", "source", "filters", "completeness", "baselineFingerprint", "currentFingerprint", "newConversations", "changedConversations", "missingFromCurrentView"],
+  "properties": {
+    "format": { "const": "gpre.review_delta.v1" },
+    "schemaVersion": { "const": "2.1-factual" },
+    "source": { "type": "object", "properties": { "url": { "type": "string" } }, "required": ["url"] },
+    "filters": { "type": "object" },
+    "completeness": { "type": "object", "properties": { "allThreadsLoaded": { "const": true }, "hiddenThreadsExpanded": { "const": true }, "outdatedSectionsExpanded": { "const": true }, "parseWarnings": { "type": "array", "maxItems": 0 } }, "required": ["allThreadsLoaded", "hiddenThreadsExpanded", "outdatedSectionsExpanded", "parseWarnings"] },
+    "baselineFingerprint": { "type": ["string", "null"] },
+    "currentFingerprint": { "type": ["string", "null"] },
+    "newConversations": { "type": "array", "items": { "$ref": "#/$defs/conversation" } },
+    "changedConversations": { "type": "array", "items": { "$ref": "#/$defs/conversation" } },
+    "missingFromCurrentView": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "conversation": {
+      "type": "object",
+      "required": ["rootComment", "comments"],
+      "properties": {
+        "rootComment": { "type": "object", "properties": { "text": { "type": "string" } }, "required": ["text"] },
+        "comments": { "type": "array", "items": { "type": "object", "properties": { "text": { "type": "string" } }, "required": ["text"] } }
+      }
+    }
+  }
+}

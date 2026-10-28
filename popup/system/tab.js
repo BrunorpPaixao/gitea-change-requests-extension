@@ -14,22 +14,14 @@ async function getActivePrTabAndContext() {
     throw new Error("No active tab found.");
   }
   if (!isLikelyGiteaPrTab(tab.url || "")) {
-    throw new Error("Open a Gitea pull request page ending with /OWNER/REPO/pulls/NUMBER on a host that starts with git.");
+    throw new Error("Open a Gitea pull request page ending with /OWNER/REPO/pulls/NUMBER.");
   }
 
-  let context = null;
-  try {
-    const contextResponse = await sendMessageToPrTab(tab.id, {
-      type: "GET_PR_CONTEXT",
-    });
-    if (contextResponse?.ok) {
-      context = contextResponse.context || null;
-    }
-  } catch (_error) {
-    // Fall back to URL parsing when context is unavailable.
+  const contextResponse = await sendMessageToPrTab(tab.id, { type: "GET_PR_CONTEXT" });
+  if (!contextResponse?.ok) {
+    throw new Error(contextResponse?.error || "This page is not a supported Gitea pull request.");
   }
-
-  return { tab, context };
+  return { tab, context: contextResponse.context || null };
 }
 
 /**
@@ -43,7 +35,7 @@ async function runScrape() {
     throw new Error("No active tab found.");
   }
   if (!isLikelyGiteaPrTab(tab.url || "")) {
-    throw new Error("Open a Gitea pull request page ending with /OWNER/REPO/pulls/NUMBER on a host that starts with git.");
+    throw new Error("Open a Gitea pull request page ending with /OWNER/REPO/pulls/NUMBER.");
   }
 
   const scrapeResponse = await sendMessageToPrTab(tab.id, {
@@ -64,7 +56,7 @@ async function runScrape() {
     throw new Error(scrapeResponse?.error || "Unable to scrape this page.");
   }
 
-  return { tab, exportPayload: scrapeResponse.result || {} };
+  return { tab, exportPayload: scrapeResponse.result || {}, coverage: scrapeResponse.coverage || null };
 }
 
 /**
@@ -87,9 +79,8 @@ function isLikelyGiteaPrTab(urlString) {
   try {
     const url = new URL(urlString);
     const isHttp = url.protocol === "http:" || url.protocol === "https:";
-    const hostStartsWithGit = /^git/i.test(url.hostname);
     const isPrPath = /^\/[^/]+\/[^/]+\/pulls\/\d+\/?$/i.test(url.pathname);
-    return isHttp && hostStartsWithGit && isPrPath;
+    return isHttp && isPrPath;
   } catch (_error) {
     return false;
   }

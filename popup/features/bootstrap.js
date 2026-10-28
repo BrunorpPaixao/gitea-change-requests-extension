@@ -45,9 +45,13 @@ async function initPopup() {
     });
     if (contextResponse?.ok) {
       setHeaderContextFromTab(parsed, contextResponse.context || null);
+    } else {
+      setError(contextResponse?.error || "This page is not a supported Gitea pull request.");
+      return;
     }
-  } catch (_error) {
-    // Ignore context detection errors; URL-based metadata is enough.
+  } catch (error) {
+    setError(error.message || String(error));
+    return;
   }
 
   try {

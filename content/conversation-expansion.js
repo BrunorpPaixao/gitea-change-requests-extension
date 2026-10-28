@@ -12,9 +12,9 @@ async function expandGlobalHiddenConversationAreas() {
   const clicked = new Set();
   const candidates = Array.from(document.querySelectorAll("button, a[role='button'], a"));
   let attemptedOutdatedExpand = false;
-  let expandedOutdated = false;
+  let expandedOutdated = true;
   let attemptedHiddenExpand = false;
-  let expandedHidden = false;
+  let expandedHidden = true;
 
   for (const el of candidates) {
     const label = getButtonLikeText(el);
@@ -27,9 +27,10 @@ async function expandGlobalHiddenConversationAreas() {
       const key = elementKey(el);
       if (!clicked.has(key)) {
         clicked.add(key);
+        const before = captureExpandState(el, document.body);
         el.click();
-        expandedOutdated = true;
         await waitForDomSettle(document.body, 500);
+        expandedOutdated = didExpandControl(el, document.body, before) && expandedOutdated;
       }
     }
     if (isConversationExpandControlLabel(label) && isElementActionable(el)) {
@@ -37,18 +38,19 @@ async function expandGlobalHiddenConversationAreas() {
       const key = elementKey(el);
       if (!clicked.has(key)) {
         clicked.add(key);
+        const before = captureExpandState(el, document.body);
         el.click();
-        expandedHidden = true;
         await waitForDomSettle(document.body, 450);
+        expandedHidden = didExpandControl(el, document.body, before) && expandedHidden;
       }
     }
   }
 
   return {
     attemptedOutdatedExpand,
-    expandedOutdated,
+    expandedOutdated: attemptedOutdatedExpand && expandedOutdated,
     attemptedHiddenExpand,
-    expandedHidden,
+    expandedHidden: attemptedHiddenExpand && expandedHidden,
   };
 }
 
@@ -61,7 +63,7 @@ async function expandGlobalHiddenConversationAreas() {
 async function expandConversationIfNeeded(block) {
   const clicked = new Set();
   let attemptedHiddenExpand = false;
-  let expandedHidden = false;
+  let expandedHidden = true;
 
   const selectors = [
     "button",
@@ -93,14 +95,32 @@ async function expandConversationIfNeeded(block) {
       }
       clicked.add(key);
 
+      const before = captureExpandState(button, block);
       button.click();
-      expandedHidden = true;
       await waitForDomSettle(block, 700);
+      expandedHidden = didExpandControl(button, block, before) && expandedHidden;
     }
   }
 
   await waitForDomSettle(block, 300);
-  return { attemptedHiddenExpand, expandedHidden };
+  return { attemptedHiddenExpand, expandedHidden: attemptedHiddenExpand && expandedHidden };
+}
+
+function captureExpandState(control, root) {
+  return {
+    label: getButtonLikeText(control),
+    expanded: control.getAttribute("aria-expanded"),
+    conversationCount: root.querySelectorAll(".ui.segments.conversation-holder").length,
+    commentCount: root.querySelectorAll(".timeline-item.comment, .comment[data-comment-id]").length,
+  };
+}
+
+function didExpandControl(control, root, before) {
+  if (!control.isConnected || !isElementActionable(control)) return true;
+  if (control.getAttribute("aria-expanded") === "true" && before.expanded !== "true") return true;
+  if (getButtonLikeText(control) !== before.label) return true;
+  return root.querySelectorAll(".ui.segments.conversation-holder").length > before.conversationCount ||
+    root.querySelectorAll(".timeline-item.comment, .comment[data-comment-id]").length > before.commentCount;
 }
 
 /**

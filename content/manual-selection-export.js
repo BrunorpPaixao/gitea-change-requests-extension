@@ -15,6 +15,10 @@ async function handleManualSelectionExportPreset(button, preset) {
   }
 
   button.disabled = true;
+  clearTimeout(Number(button.dataset.gpreFeedbackTimer || 0));
+  delete button.dataset.gpreFeedbackTimer;
+  button.removeAttribute("data-gpre-feedback");
+  button.setAttribute("aria-busy", "true");
   const fallbackLabel = preset.label || "Copy";
   try {
     const outputText = await buildManualSelectionExportText(preset);
@@ -26,6 +30,7 @@ async function handleManualSelectionExportPreset(button, preset) {
     setTemporaryManualSelectionExportButtonState(button, "Copied", 1200, fallbackLabel);
   } finally {
     button.disabled = false;
+    button.removeAttribute("aria-busy");
   }
 }
 

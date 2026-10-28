@@ -270,6 +270,41 @@ a.jira-link-btn:focus-visible {
   font-size: 12px;
 }
 
+.coverage-status {
+  margin: 0 0 6px;
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.coverage-status[data-state="partial"] {
+  color: var(--danger);
+}
+
+.result-details {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.preview-btn {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  background: var(--bg-soft);
+  color: var(--fg);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.preview-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 .selection-count-row {
   margin: 0 0 10px;
   display: flex;
@@ -620,6 +655,10 @@ a.jira-link-btn:focus-visible {
   padding: 9px 8px;
 }
 
+#copyBtn {
+  grid-column: 1 / -1;
+}
+
 .download-bundle-wrapper {
   border: 1px solid color-mix(in srgb, var(--border) 72%, var(--primary) 28%);
   border-radius: 12px;
@@ -779,6 +818,11 @@ a.jira-link-btn:focus-visible {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+}
+
+.download-queue-btn {
+  width: 100%;
+  margin-top: 8px;
 }
 
 .test-actions {

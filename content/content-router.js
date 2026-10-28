@@ -29,7 +29,18 @@
     if (message.type === SCRAPE_ACTION) {
       core
         .scrape(message.options || {})
-        .then((result) => sendResponse({ ok: true, result }))
+        .then((result) => sendResponse({
+          ok: true,
+          result,
+          coverage: {
+            stats: core.getLastDiagnostics()?.metrics || null,
+            completeness: result.completeness || null,
+            currentUserKnown: result.identityResolution?.currentUserKnown === true,
+            manualIncluded: (result.conversations || []).filter(
+              (item) => item.selectionReason === "included_manual_override"
+            ).length,
+          },
+        }))
         .catch((error) => sendResponse({ ok: false, error: error.message || String(error) }));
       return true;
     }

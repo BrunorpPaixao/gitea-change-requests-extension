@@ -24,6 +24,7 @@ async function handleAction(action, actionOptions = {}) {
       showSuccessBadge(sourceButton, "Copied");
       markDiagnosticsReadyCue();
       setStatus(buildExportActionStatusText("Copied", exportData));
+      await saveComparisonBaseline(exportData.canonicalPayload);
       return;
     }
 
@@ -32,6 +33,7 @@ async function handleAction(action, actionOptions = {}) {
     showSuccessBadge(sourceButton, "Saved");
     markDiagnosticsReadyCue();
     setStatus(buildExportActionStatusText("Downloaded", { ...exportData, conversationCount }));
+    await saveComparisonBaseline(exportData.canonicalPayload);
   } catch (error) {
     setStatus("");
     setError(error.message || String(error));

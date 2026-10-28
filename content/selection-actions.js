@@ -30,7 +30,16 @@ async function toggleManualConversationSelection(block, button) {
       } else {
         MANUAL_SELECTION_STATE_BY_CONVERSATION_KEY.delete(conversationKey);
       }
-      await persistManualSelectionState();
+      try {
+        await persistManualSelectionState();
+      } catch (error) {
+        if (current) {
+          MANUAL_SELECTION_STATE_BY_CONVERSATION_KEY.set(conversationKey, current);
+        } else {
+          MANUAL_SELECTION_STATE_BY_CONVERSATION_KEY.delete(conversationKey);
+        }
+        throw error;
+      }
       await refreshManualSelectionUi({ applyHighlights: true });
     })();
     MANUAL_SELECTION_UI_REFRESH_PROMISE = refreshPromise;

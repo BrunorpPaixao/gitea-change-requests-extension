@@ -193,7 +193,7 @@ function ensureConversationSelectionButton(block, target, copyButton) {
       event.preventDefault();
       event.stopPropagation();
       toggleManualConversationSelection(block, button).catch(() => {
-        setTemporaryButtonState(button, "Update failed", 1600, button.textContent || "select");
+        setTemporaryManualSelectionButtonState(block, button, "Update failed", 1600);
       });
     });
     insertConversationActionButton(target, block, button, copyButton ? 1 : 0, copyButton || null);

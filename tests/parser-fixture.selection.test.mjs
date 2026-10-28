@@ -108,7 +108,36 @@ test("standalone comment copy button writes the JSON payload instead of failing"
     assert.match(clipboardText, /single_conversation/);
     assert.match(clipboardText, /Top-level comment outside conversation block\./);
     assert.equal(copyButton.textContent, "Copied");
+    assert.equal(copyButton.getAttribute("data-gpre-feedback"), "success");
+    assert.equal(copyButton.hasAttribute("aria-busy"), false);
     assert.notEqual(copyButton.textContent, "Copy failed");
+  } finally {
+    harness.dispose();
+  }
+});
+
+test("failed manual selection restores the selection button and leaves it unselected", async () => {
+  const harness = createContentHarness({
+    html: standaloneCommentHtml,
+    url: "https://git.example.com/acme/sample-repo/pulls/42",
+  });
+
+  try {
+    await harness.window.GPREManualSelectionUiRefreshPromise;
+    const button = harness.window.document.querySelector("#comment-9001 [data-gpre-manual-selection='1']");
+    assert.ok(button);
+    harness.window.chrome.storage.local.set = () => {
+      throw new Error("Storage unavailable");
+    };
+
+    button.click();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    assert.equal(button.textContent, "Update failed");
+    assert.equal(button.getAttribute("aria-pressed"), "false");
+
+    await new Promise((resolve) => setTimeout(resolve, 1620));
+    assert.equal(button.textContent, "select");
+    assert.equal(button.querySelector(".gpre-copy-single-icon"), null);
   } finally {
     harness.dispose();
   }
@@ -187,6 +216,7 @@ test("sticky export presets copy the four JSON formats without opening the popup
     buttons[0].click();
     const normalText = await waitForClipboardChange("");
     assert.match(normalText, /"schemaVersion": "2\.1-factual"/);
+    assert.equal(buttons[0].getAttribute("data-gpre-feedback"), "success");
     buttons[1].click();
     const minifiedText = await waitForClipboardChange(normalText);
     assert.equal(minifiedText.includes("\n"), false);

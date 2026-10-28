@@ -6,13 +6,19 @@ const copyBtn = document.getElementById("copyBtn");
 const jsonMinBtn = document.getElementById("jsonMinBtn");
 const jsonShortBtn = document.getElementById("jsonShortBtn");
 const jsonMinShortBtn = document.getElementById("jsonMinShortBtn");
+const copyQueueBtn = document.getElementById("copyQueueBtn");
+const copyChangesBtn = document.getElementById("copyChangesBtn");
+const clearComparisonBtn = document.getElementById("clearComparisonBtn");
 const downloadBtn = document.getElementById("downloadBtn");
+const downloadQueueBtn = document.getElementById("downloadQueueBtn");
 const downloadDiffBtn = document.getElementById("downloadDiffBtn");
 const downloadBundleWrapper = document.getElementById("downloadBundleWrapper");
 const downloadBundleState = document.getElementById("downloadBundleState");
 const testSelectionBtn = document.getElementById("testSelectionBtn");
 const testHighlightsBtn = document.getElementById("testHighlightsBtn");
 const summaryEl = document.getElementById("summary");
+const coverageStatusEl = document.getElementById("coverageStatus");
+const resultDetailsEl = document.getElementById("resultDetails");
 const selectedNodeCountEl = document.getElementById("selectedNodeCount");
 const activeFiltersEl = document.getElementById("activeFilters");
 const statusEl = document.getElementById("status");
@@ -69,12 +75,18 @@ const REQUIRED_UI_ELEMENTS = [
   ["jsonMinBtn", jsonMinBtn],
   ["jsonShortBtn", jsonShortBtn],
   ["jsonMinShortBtn", jsonMinShortBtn],
+  ["copyQueueBtn", copyQueueBtn],
+  ["copyChangesBtn", copyChangesBtn],
+  ["clearComparisonBtn", clearComparisonBtn],
   ["downloadBtn", downloadBtn],
+  ["downloadQueueBtn", downloadQueueBtn],
   ["downloadDiffBtn", downloadDiffBtn],
   ["downloadBundleWrapper", downloadBundleWrapper],
   ["testSelectionBtn", testSelectionBtn],
   ["testHighlightsBtn", testHighlightsBtn],
   ["summaryEl", summaryEl],
+  ["coverageStatusEl", coverageStatusEl],
+  ["resultDetailsEl", resultDetailsEl],
   ["selectedNodeCountEl", selectedNodeCountEl],
   ["statusEl", statusEl],
   ["errorEl", errorEl],

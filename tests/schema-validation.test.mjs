@@ -13,6 +13,7 @@ const singleSample = JSON.parse(
   readFileSync(new URL("./fixtures/schema-v2.1-single-output-example.json", import.meta.url), "utf8")
 );
 const readmeText = readFileSync(new URL("../README.md", import.meta.url), "utf8");
+const formatReferenceText = readFileSync(new URL("../docs/export-format.md", import.meta.url), "utf8");
 
 test("schema v2.1-factual sample output validates", () => {
   const ajv = new Ajv2020({ allErrors: true, strict: false });
@@ -71,16 +72,17 @@ test("selectionReason enum is explicit and stable in schema", () => {
   ]);
 });
 
-test("README documents pageParticipants source/meaning and ordering guarantees", () => {
-  assert.equal(/pageParticipants` comes from the PR sidebar section/i.test(readmeText), true);
-  assert.equal(/does not imply reviewer or comment-author semantics/i.test(readmeText), true);
-  assert.equal(readmeText.includes("### Ordering Guarantees"), true);
-  assert.equal(readmeText.includes("### Property Ordering Contract"), true);
-  assert.equal(readmeText.includes("Top-level export object order"), true);
-  assert.equal(readmeText.includes("Conversation object order"), true);
-  assert.equal(readmeText.includes("`nodeType`"), true);
-  assert.equal(readmeText.includes("views.byFile.<filePath>[]"), true);
-  assert.equal(readmeText.includes("commentIdsInOrder"), true);
-  assert.equal(readmeText.includes("commentAuthorsInOrder"), true);
-  assert.equal(readmeText.includes("Allowed values: `included_by_default`, `included_resolved`, `included_outdated`, `included_last_comment_by_current_user`"), true);
+test("README links to the export contract, which keeps identity and ordering guarantees", () => {
+  assert.equal(readmeText.includes("docs/export-format.md"), true);
+  assert.equal(/pageParticipants` comes from the PR sidebar section/i.test(formatReferenceText), true);
+  assert.equal(/does not imply reviewer or comment-author semantics/i.test(formatReferenceText), true);
+  assert.equal(formatReferenceText.includes("### Ordering Guarantees"), true);
+  assert.equal(formatReferenceText.includes("### Property Ordering Contract"), true);
+  assert.equal(formatReferenceText.includes("Top-level export object order"), true);
+  assert.equal(formatReferenceText.includes("Conversation object order"), true);
+  assert.equal(formatReferenceText.includes("`nodeType`"), true);
+  assert.equal(formatReferenceText.includes("views.byFile.<filePath>[]"), true);
+  assert.equal(formatReferenceText.includes("commentIdsInOrder"), true);
+  assert.equal(formatReferenceText.includes("commentAuthorsInOrder"), true);
+  assert.equal(formatReferenceText.includes("Allowed values: `included_by_default`, `included_resolved`, `included_outdated`, `included_last_comment_by_current_user`"), true);
 });

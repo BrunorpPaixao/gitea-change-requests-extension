@@ -139,27 +139,48 @@ function ensureManualSelectionSummaryStyles() {
         gap: 6px;
       }
       .gpre-manual-selection-export-btn {
-        min-height: 30px;
-        padding: 7px 10px;
+        min-height: 32px;
+        padding: 7px 9px;
         border: 1px solid rgba(122, 139, 158, 0.35);
-        border-radius: 10px;
+        border-radius: 7px;
         background: rgba(17, 23, 32, 0.95);
         color: #e6edf3;
         font-size: 11px;
-        font-weight: 700;
+        font-weight: 600;
         letter-spacing: 0.01em;
         cursor: pointer;
-        transition: transform 120ms ease, border-color 120ms ease, background-color 120ms ease;
+        transition: transform 140ms cubic-bezier(0.25, 1, 0.5, 1),
+          border-color 160ms cubic-bezier(0.25, 1, 0.5, 1),
+          background-color 160ms cubic-bezier(0.25, 1, 0.5, 1);
+      }
+      .gpre-manual-selection-export-btn:first-child {
+        border-color: rgba(47, 177, 112, 0.58);
+        background: rgba(28, 62, 46, 0.92);
+        font-weight: 700;
       }
       .gpre-manual-selection-export-btn:hover {
         transform: translateY(-1px);
-        border-color: rgba(47, 177, 112, 0.55);
+        border-color: rgba(47, 177, 112, 0.75);
         background: rgba(22, 30, 40, 0.98);
       }
+      .gpre-manual-selection-export-btn:active:not(:disabled) {
+        transform: scale(0.97);
+      }
+      .gpre-manual-selection-export-btn:focus-visible {
+        outline: 2px solid #2fb170;
+        outline-offset: 2px;
+      }
       .gpre-manual-selection-export-btn:disabled {
-        cursor: wait;
-        opacity: 0.75;
+        cursor: progress;
+        opacity: 0.65;
         transform: none;
+      }
+      .gpre-manual-selection-export-btn[data-gpre-feedback="success"] {
+        border-color: #2fb170;
+        background: rgba(28, 62, 46, 0.92);
+      }
+      .gpre-manual-selection-export-btn[data-gpre-feedback="error"] {
+        border-color: #cf5f5f;
       }
       body.theme-light .gpre-manual-selection-summary {
         background: rgba(255, 255, 255, 0.94);
@@ -191,6 +212,20 @@ function ensureManualSelectionSummaryStyles() {
       body.theme-light .gpre-manual-selection-export-btn:hover {
         background: rgba(240, 244, 248, 1);
         border-color: rgba(31, 143, 85, 0.38);
+      }
+      body.theme-light .gpre-manual-selection-export-btn:first-child,
+      body.theme-light .gpre-manual-selection-export-btn[data-gpre-feedback="success"] {
+        background: rgba(226, 244, 233, 0.98);
+        border-color: rgba(31, 143, 85, 0.55);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .gpre-manual-selection-export-btn {
+          transition: none;
+        }
+        .gpre-manual-selection-export-btn:hover,
+        .gpre-manual-selection-export-btn:active:not(:disabled) {
+          transform: none;
+        }
       }
     `;
   document.head.appendChild(style);

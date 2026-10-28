@@ -1,523 +1,55 @@
 # Gitea PR Review Exporter
 
-Chrome extension (Manifest V3) to export unresolved Gitea pull request review conversations from PR files/conversation pages into JSON.
+A Manifest V3 Chrome extension that copies or downloads factual Gitea pull request review conversations as JSON. It runs on the active PR tab; review text and code context come from the page.
 
-## Download and Install
-If you just want to use the extension (recommended):
-1. Download the latest release zip from the repository Releases page.
-2. Unzip it locally.
-3. Open `chrome://extensions`.
-4. Enable **Developer mode**.
-5. Click **Load unpacked**.
-6. Select the unzipped extension folder.
+## Install
 
-If you downloaded source from GitHub (**Code > Download ZIP**) or cloned the repo:
-1. Open `chrome://extensions`.
-2. Enable **Developer mode**.
-3. Click **Load unpacked**.
-4. Select this extension folder.
+1. Download and unzip the latest extension ZIP from [Releases](https://github.com/BrunorpPaixao/gitea-change-requests-extension/releases), or use [the local distribution ZIP](dist/gitea-pr-review-exporter.zip) from this checkout.
+2. Open `chrome://extensions`, enable **Developer mode**, and click **Load unpacked**.
+3. Select the unzipped extension folder or this repository's root folder.
 
-## Use
-1. Open a Gitea PR page ending with `/OWNER/REPO/pulls/123` (host must start with `git`).
-2. Click the extension icon.
-3. Review/edit **Git user name** (auto-detected from page when possible).
-4. Optional filters:
-   - **Ignore where last comment is from user**
-   - **Ignore resolved changes** (on by default)
-   - **Ignore outdated changes** (on by default)
-   - **Ignore comments** (on by default; excludes standalone `.timeline-item.comment` entries)
-   - **Use shortened JSON keys** (on by default; compact agent export)
-   - **Script stats** (off by default; adds `filtersApplied` and `stats` in JSON output)
-   - **Debug** (off by default; shows the status/error panel at the bottom)
-   - **Verbose diagnostics** (off by default; captures detailed skip decisions and performance metrics)
-5. Click **Test Selection** to highlight and number conversations selected by the current filters.
-6. Click **Copy JSON** or **Download JSON**.
-7. In Debug mode, use **Copy Diagnostics** / **Download Diagnostics** after a run to inspect parser decisions.
+## Your first export
 
-## User Notes
-- Supported pages: Gitea PR URLs like `/OWNER/REPO/pulls/123` on hosts starting with `git`.
-- The extension works on the active PR tab and exports factual conversation data only.
-- If your PR has hidden/outdated sections, the scraper attempts to expand and include them based on your active filters.
+1. Open a Gitea PR at an HTTP(S) URL like `https://git.example.com/owner/repo/pulls/123`.
+2. Open the extension popup and check **Git user name**. It is detected from the page when possible.
+3. Click **Preview selection**. Review the included/skipped counts and coverage status; selected conversations are highlighted on the page.
+4. Click **Copy with current settings** for JSON on the clipboard, or open **Download** and click **Download JSON**.
 
-## Popup Settings Persistence
-Popup settings are stored in `chrome.storage.local` and restored each time the popup opens:
-- Git user name
-- Ignore where last comment is from user
-- Ignore resolved changes
-- Ignore outdated changes
-- Use shortened JSON keys
-- Minify JSON output
-- Script stats
-- Debug
-- Verbose diagnostics
+Four exclusion filters are on by default: resolved threads, outdated threads, standalone comments, and threads whose last comment is from the selected user. Turn off a filter to include those items. Thread filters run in this order: resolved, outdated, then last-comment-by-user; standalone comments are handled separately. A thread excluded early does not appear in later skip counts. **Use shortened JSON keys** is also on by default; **Minify JSON output** is optional. Settings are saved locally.
 
-Theme preference is stored separately via `localStorage` key `gitea-pr-review-exporter-theme`.
+A **partial coverage** warning means some page content may not have loaded or parsed. Check the PR page and preview again before relying on the export or comparison.
 
-Single-conversation copy (`Copy` button on a thread or standalone comment) resolves `actors.currentUser.username` in this order:
-1. Popup settings value from `chrome.storage.local` (`gitea-pr-review-exporter-popup-settings-v2.userName`) when non-empty.
-2. Page/header detection (`detectDefaultGitUserName`, same resolver used by the full PR flow default user lookup).
-3. `null` when still unavailable.
+## Other actions
 
-Per-thread manual selection overrides live on the conversation blocks themselves and on standalone comment nodes:
-- The per-thread toggle switches between `select` and `deselect`.
-- When selected, the thread or comment gets a visible manual highlight in the page so it is obvious which items are pinned into the export.
-- Overrides are stored in `chrome.storage.local` under `gitea-pr-review-exporter-manual-selections-v1`, grouped by PR key and conversation key.
-- Manual overrides take precedence over the popup filters in both export and test-selection flows.
-- The inline `Copy` button now uses the standard Gitea button look instead of the previous custom green treatment.
+| Action | Result |
+| --- | --- |
+| **Copy review queue** / **Download review queue JSON** | A compact factual payload for handing review work to an AI skill. |
+| **Copy changes** | New and changed conversations since the last complete export of this PR with the same filters. A missing ID means absent from the current view, not necessarily resolved or deleted. |
+| **Download Bundle (ZIP)** | Full JSON plus the PR diff. **Download Diff** is available separately. |
+| In-page **Copy** | JSON for one thread or standalone comment. |
+| In-page **Select** / **Deselect** | Highlight and store a manual selection. Manual inclusion still follows the active filters. The in-page preset buttons copy JSON in the chosen format. |
 
-## Diagnostics
-After any scrape/test run, diagnostics are available through popup debug actions:
-- `Copy Diagnostics`: copies the latest diagnostics payload JSON
-- `Download Diagnostics`: downloads diagnostics as `*-diagnostics.json`
+A complete full export, review queue, or bundle saves a comparison baseline containing IDs, filters, and hashes, without comment bodies. Use **Clear comparison history for this PR** to remove it. Changing filters requires a new complete export before **Copy changes** is available again.
 
-Diagnostics payload includes:
-- scrape runtime (`runtimeMs`)
-- inclusion/skip counters
-- optional per-thread decision samples (when verbose diagnostics is enabled)
-- warning when runtime exceeds guardrail threshold
+## Optional AI handoff
 
-## Compact Agent Export
-- `shortKeys` is a popup setting (`Use shortened JSON keys`) and is enabled by default.
-- This setting changes serialized key names only. It does not change extraction logic, values, ordering semantics, or factual-only behavior.
-- The canonical internal model remains the full-key schema; short keys are applied in a serializer adapter during export/copy output generation.
-- The current project has one settings surface (popup). There is no CLI flag in this codebase.
+Invoke **`$git-changes` explicitly** and provide the copied JSON or a JSON file path. The skill accepts review queues, full exports, and change payloads; it can prepare large files without repeating the whole payload in model context. Pasting JSON alone does not invoke the skill. Its editable source is [skills/git-changes/SKILL.md](skills/git-changes/SKILL.md), and [skill.zip](skill.zip) is the portable package.
 
-### Short Key Mapping
-Top-level
-- `schemaVersion -> v`
-- `scope -> sc`
-- `source -> src`
-- `actors -> act`
-- `identityResolution -> idr`
-- `participants -> part`
-- `exportOptions -> opts`
-- `completeness -> comp`
-- `ordering -> ord`
-- `counts -> cnt`
-- `views -> vw`
-- `conversations -> th`
-- `exportFingerprint -> fp`
+## Output and limits
 
-Source
-- `host -> host`
-- `owner -> own`
-- `repo -> repo`
-- `prNumber -> pr`
-- `url -> url`
-- `title -> title`
-- `scrapedAt -> at`
+- Full PR and single-conversation exports use the factual `2.1-factual` contract. Short keys change field names only, never values or selection behavior.
+- Exports contain scraped comments, links, known identities, resolution/outdated state, and available diff context. The extension does not infer reviewer intent or action state.
+- Supported pages need a `/OWNER/REPO/pulls/NUMBER` URL and recognizable Gitea PR markup. Hidden or outdated sections are expanded where possible.
+- See the [export format reference](docs/export-format.md) for the example, field meanings, short-key mapping, and ordering guarantees. Machine-readable schemas: [full export](schemas/export-schema-v2.1.json), [review queue](schemas/review-queue-v1.schema.json), [changes](schemas/review-delta-v1.schema.json).
 
-Actors / identity
-- `currentUser -> me`
-- `prAuthor -> pra`
-- `currentUserKnown -> mek`
-- `prAuthorKnown -> prak`
+## Troubleshooting
 
-Conversation / thread
-- `conversationId -> id`
-- `filePath -> file`
-- `threadUrl -> url`
-- `resolved -> res`
-- `outdated -> old`
-- `lineNew -> ln`
-- `lineOld -> lo`
-- `diffSide -> side`
-- `hunkHeader -> hunk`
-- `codeContext -> ctx`
-- `rootComment -> root`
-- `comments -> c`
-- `lastCommentId -> lid`
-- `lastCommentUrl -> lurl`
-- `lastCommentByOtherUser -> lboo`
+- **No PR detected:** open the PR itself, not a repository list or diff URL, then reopen the popup.
+- **Unexpected selection:** check the four filters, Git user name, and **Preview selection** counts.
+- **Incomplete export:** reload the PR and wait for conversations to load. Enable **Debug** for **Copy Diagnostics** or **Download Diagnostics**; **Verbose diagnostics** adds per-thread decisions.
 
-Code context
-- `lines -> l`
+## Development
 
-Code context line
-- `type -> t`
-- `oldLine -> o`
-- `newLine -> n`
-- `marker -> m`
-- `text -> x`
+Runtime code is plain JavaScript in `popup/`, `content/`, and `shared/`; the popup injects content scripts only into the active PR tab. The extension uses `activeTab`, `tabs`, and `scripting` for page access, `storage` for settings and comparison state, and `clipboardWrite`/`downloads` for exports.
 
-Comment
-- `id -> id`
-- `author -> a`
-- `datetime -> dt`
-- `text -> x`
-- `url -> url`
-- `displayName -> dn`
-
-Helper arrays / counters
-- `commentIdsInOrder -> cio`
-- `commentAuthorsInOrder -> cao`
-- `commentCount -> cc`
-- `hasReplies -> hr`
-
-## Runtime Script Layout
-Popup logic is split into focused files under `popup/`:
-- `popup/popup.html`: popup markup entrypoint referenced by the manifest
-- `popup/state.js`: shared DOM refs, constants, and required element checks
-- `popup/ui.js`: visual state, status/error updates, and interaction micro-feedback
-- `popup/system/messaging.js`: content-script injection and runtime messaging helpers
-- `popup/system/tab.js`: active-tab lookup, PR validation, and scrape orchestration
-- `popup/system.js`: PR URL/context helpers and diff URL construction
-- `popup/system-filenames.js`: popup filename and timestamp helpers
-- `popup/system/theme.js`: theme preference persistence and application
-- `popup/system/settings.js`: popup settings persistence and active-option summary
-- `popup/system/zip.js`: ZIP archive helpers for bundled downloads
-- `popup/features/header-context.js`: popup header context, Jira links, and selected-count rendering
-- `popup/features/pr-tab-guards.js`: shared popup active-PR tab validation helpers
-- `popup/features/bootstrap.js`: popup startup and active-tab context hydration
-- `popup/features/export-data.js`: serialized export payload building and JSON download plumbing
-- `popup/features/diagnostics-payload.js`: diagnostics payload enrichment and filename shaping
-- `popup/features/test-data.js`: shared popup test request payload and status text helpers
-- `popup/features/export-status.js`: export status text and savings hint helpers
-- `popup/features/diff-download-data.js`: low-level diff fetch helper used by diff and bundle downloads
-- `popup/features/export-metrics.js`: output-size comparison helpers for JSON export modes
-- `popup/features/export.js`: JSON copy/download workflow and serialization decisions
-- `popup/features/diff-download.js`: PR diff download workflow
-- `popup/features/bundle-download-data.js`: combined JSON + diff ZIP download plumbing
-- `popup/features/bundle-download.js`: combined JSON + diff bundle workflow
-- `popup/features/testing.js`: selection/highlight test workflows
-- `popup/features/diagnostics.js`: diagnostics copy/download workflow
-- `popup/core.js`: thin compatibility shell kept intentionally small
-- `popup/main.js`: startup wiring and event binding
-
-Content script is split into core + router files:
-- `content/runtime-state.js`: shared action constants and runtime globals used by content modules
-- `content/content.js`: content runtime registry and exported API wiring
-- `content/scrape-core.js`: scrape/test orchestration, block collection, and filtering
-- `content/dom-utils.js`: low-level DOM/text normalization helpers shared across content modules
-- `content/identity-utils.js`: shared username, Jira link, and Gitea URL identity helpers
-- `content/standalone-comment-utils.js`: shared predicate that identifies standalone timeline comments
-- `content/conversation-expansion.js`: page-level and thread-level expansion of hidden/outdated conversation content
-- `content/context/pr-context.js`: PR owner/repo/branch context detection
-- `content/context/user-detection.js`: default-user detection and Jira link extraction
-- `content/page-participants.js`: PR author, reviewer, and sidebar participant detection
-- `content/highlight/rendering.js`: in-page selection highlights, debug overlay, and highlight styles
-- `content/selection-io.js`: popup-settings access, clipboard writes, and temporary button-state helpers
-- `content/manual-selection-export.js`: manual-selection export preset copy flow
-- `content/selection-copy.js`: single-conversation JSON copy flow
-- `content/selection-state.js`: manual-selection keying, hydration, persistence, and state lookup helpers
-- `content/selection-summary-ui.js`: floating summary/export shell, styles, and preset controls
-- `content/selection-summary.js`: summary counting and copyable-conversation resolution
-- `content/selection-visuals.js`: action-button labels, styles, selection visual state, and manual highlight rendering
-- `content/selection-actions-bootstrap.js`: action-button wiring, DOM target resolution, and mutation-observer setup
-- `content/selection-actions.js`: manual-selection state toggling and refresh behavior
-- `content/code-context.js`: diff-table code context extraction helpers
-- `content/comment-extraction.js`: comment node collection and normalization
-- `content/conversation-extraction.js`: conversation metadata extraction from review threads
-- `content/conversation-collection-threaded.js`: threaded collection pass used by the scrape orchestrator
-- `content/conversation-collection-standalone.js`: standalone comment collection pass used by the scrape orchestrator
-- `content/conversation-collection.js`: collection-pass entrypoint used by the scrape orchestrator
-- `content/conversation-selection.js`: resolution detection, last-comment checks, and conversation selection rules
-- `content/standalone-comments.js`: standalone timeline-comment discovery and conversation-shape normalization
-- `content/scrape-state.js`: scrape option normalization, collection counters, completeness, and diagnostics bookkeeping
-- `content/diagnostics.js`: scrape diagnostics payload building
-- `content/export-participants.js`: export participant payload assembly and serialized export-option shaping
-- `content/export-views.js`: deterministic export view/index payload construction and sort helpers
-- `content/export-normalization.js`: export property ordering and normalization helpers
-- `content/export-fingerprint.js`: deterministic export fingerprint hashing and canonical stringification
-- `content/export-conversation-facts-utils.js`: shared conversation export utility helpers
-- `content/export-conversation-facts.js`: conversation enrichment and aggregate counts
-- `content/export-envelope-sections.js`: shared export-envelope section assembly helpers
-- `content/conversation-selection-utils.js`: shared last-comment and resolution helpers
-- `content/export-envelope.js`: factual export schema assembly, counts, views, normalization, and fingerprinting
-- `content/content-router.js`: message routing and bootstrap wiring
-
-Inside the content runtime, responsibilities are organized by facades:
-- `ScrapeModule`: scrape/test flows and schema envelope creation
-- `PrContextModule`: PR metadata and source/target branch extraction
-- `HighlightModule`: in-page selection/highlight rendering
-- `SingleCopyModule`: per-conversation copy button lifecycle
-- `UserModule`: current user detection helpers
-
-## How unresolved vs resolved is detected
-The scraper evaluates each `.ui.segments.conversation-holder` block and uses these signals:
-- **Unresolved** when a control indicates `data-action="Resolve"` or text like `Resolve conversation`.
-- **Resolved** when a control indicates `data-action="UnResolve"` / `Unresolve` or text like `Unresolve conversation`.
-- **Resolved** when the block text contains `marked this conversation as resolved`.
-- Export selection follows the active filter checkboxes (resolved/outdated/user-last-comment).
-
-## Output JSON Structure (Current Schema, Anonymized Example)
-The extension exports a factual-only schema v2.1-factual envelope (`schemaVersion: "2.1-factual"`).
-By default, `filtersApplied` and `stats` are omitted unless **Script stats** is enabled.
-
-```json
-{
-  "schemaVersion": "2.1-factual",
-  "scope": {
-    "type": "pull_request"
-  },
-  "source": {
-    "host": "git.example.com",
-    "owner": "example-org",
-    "prNumber": 987,
-    "repo": "example-repo",
-    "scrapedAt": "2026-03-23T19:40:12.000Z",
-    "title": "#987 - Improve notification listener - example-repo - Git",
-    "url": "https://git.example.com/example-org/example-repo/pulls/987"
-  },
-  "actors": {
-    "currentUser": { "username": "author_b" },
-    "prAuthor": { "username": null }
-  },
-  "identityResolution": {
-    "currentUserKnown": true,
-    "prAuthorKnown": false
-  },
-  "participants": {
-    "commentAuthors": ["reviewer_a", "author_b"],
-    "pageParticipants": ["author_b", "reviewer_a"],
-    "reviewers": ["reviewer_a"]
-  },
-  "exportOptions": {
-    "debug": false,
-    "gitUserName": "author_b",
-    "ignoreLastCommentByUser": false,
-    "ignoreComments": true,
-    "ignoreOutdated": true,
-    "ignoreResolved": true,
-    "scriptStats": false,
-    "verboseDiagnostics": false
-  },
-  "completeness": {
-    "allThreadsLoaded": true,
-    "hiddenThreadsExpanded": true,
-    "outdatedSectionsExpanded": true,
-    "parseWarnings": []
-  },
-  "ordering": {
-    "comments": "chronological_ascending_with_dom_stable_fallback",
-    "conversations": "page_dom_order"
-  },
-  "counts": {
-    "commentDatetimeMissingCount": 0,
-    "conversationCount": 1,
-    "lastCommentByOtherUserCount": 0,
-    "outdatedCount": 0,
-    "resolvedCount": 0,
-    "unresolvedCount": 1
-  },
-  "views": {
-    "allConversationIds": ["123456"],
-    "byFile": {
-      "backend/service/src/main/java/com/example/app/SampleService.java": ["123456"]
-    },
-    "lastCommentByCurrentUser": ["123456"],
-    "lastCommentByOtherUser": [],
-    "notOutdated": ["123456"],
-    "outdated": [],
-    "resolved": [],
-    "unresolved": ["123456"],
-    "unresolvedLastCommentByOtherUser": [],
-    "unresolvedLastCommentByOtherUserNewestFirst": []
-  },
-  "conversations": [
-    {
-      "conversationId": "123456",
-      "nodeType": "change",
-      "filePath": "backend/service/src/main/java/com/example/app/SampleService.java",
-      "threadUrl": "https://git.example.com/example-org/example-repo/pulls/987/files#issuecomment-123456",
-      "resolved": false,
-      "outdated": false,
-      "selectionReason": "included_by_default",
-      "lineNew": 87,
-      "lineOld": null,
-      "diffSide": "new",
-      "hunkHeader": "@@ -80,4 +87,9 @@ public class SampleService {",
-      "codeContext": {
-        "hunkHeader": "@@ -80,4 +87,9 @@ public class SampleService {",
-        "lines": [
-          { "type": "same", "oldLine": 84, "newLine": 84, "marker": " ", "text": "if (user != null && user.isActive()) {" },
-          { "type": "del", "oldLine": 87, "newLine": null, "marker": "-", "text": "  sendNotification(user);" },
-          { "type": "add", "oldLine": null, "newLine": 87, "marker": "+", "text": "  sendNotification(user, context);" },
-          { "type": "same", "oldLine": 88, "newLine": 88, "marker": " ", "text": "}" }
-        ]
-      },
-      "rootComment": {
-        "author": "reviewer_a",
-        "datetime": "2026-03-20T13:52:11.000Z",
-        "id": "123456",
-        "text": "Can we simplify this condition?"
-      },
-      "comments": [
-        {
-          "author": "author_b",
-          "datetime": "2026-03-21T09:14:55.000Z",
-          "id": "123789",
-          "text": "Yes, updated in the latest commit."
-        }
-      ],
-      "commentIdsInOrder": ["123456", "123789"],
-      "commentAuthorsInOrder": ["reviewer_a", "author_b"],
-      "commentCount": 2,
-      "hasReplies": true,
-      "lastCommentId": "123789",
-      "lastCommentAuthor": "author_b",
-      "lastCommentAuthorIsCurrentUser": true,
-      "lastCommentAuthorIsPrAuthor": null,
-      "lastCommentAt": "2026-03-21T09:14:55.000Z",
-      "lastCommentUrl": "https://git.example.com/example-org/example-repo/pulls/987/files#issuecomment-123789",
-      "lastCommentByOtherUser": false
-    }
-  ],
-  "exportFingerprint": "fnv1a:..."
-}
-```
-
-### Top-Level Field Meanings
-- `schemaVersion`: Output contract version.
-- `source`: Page metadata at scrape time.
-- `scope`: explicit export origin (`pull_request` or `single_conversation`).
-- `actors`: factual user identities known at scrape time.
-- `identityResolution`: explicit identity reliability flags for downstream consumers.
-- `participants`: factual participant sets scraped from page sections and comment authors.
-  `pageParticipants` comes from the PR sidebar section whose heading matches `participants` (DOM heading text match). It only means “listed in that page section”; it does not imply reviewer or comment-author semantics.
-- `exportOptions`: Effective export filters/options for `scope.type = "pull_request"`; omitted for `single_conversation`.
-- `completeness`: Export coverage and parse-warning indicators for `pull_request`; omitted for `single_conversation`.
-- `ordering`: deterministic ordering contract for `pull_request`; omitted for `single_conversation`.
-- `counts`: deterministic factual counters for `pull_request`; omitted for `single_conversation`.
-- `exportFingerprint`: Stable fingerprint for incremental agent workflows.
-- `conversations`: Exported thread objects.
-- `views`: deterministic pre-filtered conversation-id arrays for `pull_request`; omitted for `single_conversation`.
-  Includes `unresolvedLastCommentByOtherUserNewestFirst` and `byFile`.
-- `filtersApplied`: Included only when **Script stats** is enabled.
-- `stats`: Included only when **Script stats** is enabled.
-
-### Property Ordering Contract
-- Top-level export object order (`pull_request`): `schemaVersion`, `scope`, `source`, `actors`, `identityResolution`, `participants`, `exportOptions`, `completeness`, `ordering`, `counts`, `views`, `conversations`, then additional optional top-level fields.
-- Top-level export object order (`single_conversation`): `schemaVersion`, `scope`, `source`, `actors`, `identityResolution`, `conversations`, `exportFingerprint`.
-- Conversation object order (`pull_request`): `conversationId`, `nodeType`, `filePath`, `threadUrl`, `resolved`, `outdated`, `selectionReason`, `lineNew`, `lineOld`, `diffSide`, `hunkHeader`, `codeContext`, `rootComment`, `comments`, `commentIdsInOrder`, `commentAuthorsInOrder`, `commentCount`, `hasReplies`, `lastCommentId`, `lastCommentAuthor`, `lastCommentAuthorIsCurrentUser`, `lastCommentAuthorIsPrAuthor`, `lastCommentAt`, `lastCommentUrl`, `lastCommentByOtherUser`, then additional optional fields.
-- Conversation object order (`single_conversation`): same shape, but omits `commentIdsInOrder` and `commentAuthorsInOrder`.
-- Comment objects (`rootComment`, `comments[]`) are key-sorted alphabetically.
-- `codeContext` object order is `hunkHeader`, then `lines`; each line entry order is `type`, `oldLine`, `newLine`, `marker`, `text`.
-
-### Conversation Field Meanings
-- `conversationId`: Thread identifier (normalized when possible).
-- `nodeType`: Node classification for the exported conversation (`comment`, `change`, `outdated_change`, or `resolved_change`).
-- `filePath`: Repository path of the commented file.
-- `lineNew` / `lineOld` / `diffSide`: additive location hints for agent processing.
-- `codeContext`: optional factual diff context from visible table rows (`hunkHeader` + bounded `lines[]`); omitted when unavailable.
-- `outdated`: `true` when Gitea marks thread as outdated.
-- `hunkHeader`: Diff hunk header text when detected.
-- `threadUrl`: Direct URL anchor to that thread.
-- `lastCommentUrl`: Absolute URL anchored to the last comment in the thread.
-- `threadKey`: present only when needed as fallback key (for example when `conversationId` is unavailable).
-- `rootComment`: First comment in the thread.
-- `comments`: Follow-up comments only (root comment excluded), ordered by datetime (ascending), with stable DOM-order fallback.
-- `resolved`: Derived from resolve/unresolve controls and thread status.
-- `commentCount`: Total number of comments in the thread (`rootComment` + `comments`).
-- `hasReplies`: whether there are follow-up comments after root comment.
-- `commentIdsInOrder` / `commentAuthorsInOrder`: chronological root+reply timeline arrays aligned by position (included for `pull_request`, omitted for `single_conversation`).
-- `lastComment*`: compact factual fields computed from ordered comments.
-- `lastCommentByOtherUser`: strict identity check against `actors.currentUser.username`.
-- `selectionReason`: inclusion reason for downstream auditing.
-  Allowed values: `included_by_default`, `included_resolved`, `included_outdated`, `included_last_comment_by_current_user`, `included_manual_override`.
-
-### Ordering Guarantees
-- `views.*` guarantees apply to `pull_request` exports (single-conversation exports omit `views`).
-- `views.byFile.<filePath>[]` preserves exported conversation order within each file group for `pull_request`.
-- `commentIdsInOrder` / `commentAuthorsInOrder` guarantees apply to `pull_request` exports (single-conversation exports omit both fields).
-
-### Factual-Only Contract
-- Exporter output is limited to raw scraped values and deterministic facts.
-- No semantic interpretation fields are emitted (for example: priority, request category, likely resolved, next actor, or action state).
-- Workflow interpretation belongs to downstream skills/agents.
-
-### Comment Field Meanings
-- `id`: Comment identifier (normalized when possible).
-- `author`: Detected author username/login.
-- `datetime`: ISO timestamp if detected/parsible; otherwise `null`.
-- `text`: Extracted comment body text.
-
-### Additional Example File
-- `.ai/examples/schema-v2.1-output-example.json`
-- `.ai/schema/gitea-pr-review-export.schema.json`
-- `tests/fixtures/schema-v2.1-output-example.json` (full PR scope)
-- `tests/fixtures/schema-v2.1-single-output-example.json` (single conversation scope)
-
-## DOM assumptions
-The scraper assumes typical Gitea PR review markup:
-- Conversation containers exist at `.ui.segments.conversation-holder`.
-- File metadata can be read from `input[name="path"]`, `input[name="line"]`, or `a.file-comment`.
-- Comment text is available in `.raw-content` (preferred) or `.render-content`.
-- Conversation controls include labels/actions such as `Resolve conversation`, `Unresolve conversation`, and `Show outdated`.
-
-It uses native DOM APIs only (no jQuery dependency), expands relevant hidden/outdated sections where possible, waits for DOM updates after clicks, and deduplicates threads by conversation id (or file/line fallback key).
-
-## Permissions and Scope
-The extension is scoped to Gitea PR pages on hosts that start with `git`:
-- Match patterns: `http://*/*/*/pulls/*` and `https://*/*/*/pulls/*`
-- Include globs: `http://git*/*/*/pulls/*` and `https://git*/*/*/pulls/*`
-
-Manifest permissions and purpose:
-- `activeTab`: interact with the currently active PR page
-- `tabs`: read active-tab URL/title for validation and filenames
-- `scripting`: execute extension-owned scripts on the active Gitea PR tab to run scraping/highlight/export workflows
-- `downloads`: support JSON/TXT file download
-- `clipboardWrite`: copy JSON to clipboard
-- `storage`: persist popup settings
-
-## Technical Notes and Developer Documentation
-
-### Branch Update Summary (2026-03-25)
-This branch refines the exporter contract to be stricter, leaner, and factual-only.
-
-#### What Changed
-- Export scope is explicit:
-  - full PR export sets `"scope": { "type": "pull_request" }`
-  - single-conversation export sets `"scope": { "type": "single_conversation" }`
-- Identity model is explicit:
-  - `actors` is the source of truth (`currentUser`, `prAuthor`)
-  - `identityResolution` indicates whether those identities are known
-- Participant output is normalized:
-  - `participants.reviewers`
-  - `participants.pageParticipants`
-  - `participants.commentAuthors`
-- Conversation payload is leaner:
-  - canonical location fields are `lineNew`, `lineOld`, `diffSide`
-  - no comment-level identity booleans
-  - no semantic/workflow inference fields
-- URL fields are now direct and actionable:
-  - `threadUrl` is absolute
-  - `lastCommentUrl` is absolute and anchored to the last comment
-- Deterministic workflow helpers expanded:
-  - `views.unresolvedLastCommentByOtherUserNewestFirst`
-  - `views.byFile`
-  - `commentIdsInOrder` / `commentAuthorsInOrder`
-- Single-conversation export is intentionally lean:
-  - keeps only `schemaVersion`, `scope`, `source`, `actors`, `identityResolution`, `conversations`, `exportFingerprint`
-  - omits top-level aggregation blocks and conversation-level ordering duplication arrays
-- `selectionReason` is stable and documented:
-  - `included_by_default`
-  - `included_resolved`
-  - `included_outdated`
-  - `included_last_comment_by_current_user`
-  - `included_manual_override`
-
-#### Diff Grounding
-- `codeContext` is extracted only from visible diff table rows on the PR page.
-- It is conversation-level only.
-- It uses factual hunk/row data (`hunkHeader`, `lines[]` with `type`, `oldLine`, `newLine`, `marker`, `text`).
-- It is omitted when matching/extraction is not confident.
-
-## CI and Local Verification
-This repository includes zero-dependency CI scripts:
-- `npm run lint`: syntax-check popup/content runtime scripts
-- `npm run test`: smoke checks for required popup controls and action constants
-- `npm run package-check`: verifies manifest consistency and referenced files
-- `npm run release:package`: builds extension zip in `dist/`
-- `npm run ci`: runs all checks
-
-GitHub Actions workflow:
-- `.github/workflows/ci.yml`
-
-## Versioning and Release Baseline
-- Follow semantic versioning (`MAJOR.MINOR.PATCH`).
-- Update `CHANGELOG.md` for user-facing changes.
-- Before release:
-  1. Run `npm run ci`
-  2. Run `npm run release:package`
-  3. Load packaged build in `chrome://extensions` and smoke-test core flows.
+Run `npm ci` and `npm run ci` to check the source. `npm run release:package` writes the current extension to `dist/gitea-pr-review-exporter.zip`. See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidance and [CHANGELOG.md](CHANGELOG.md) for release notes.

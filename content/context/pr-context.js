@@ -4,19 +4,21 @@
  */
 
 /**
- * Determines whether the current page location looks like a supported Gitea PR page.
+ * Determines whether the current URL and DOM look like a supported Gitea PR page.
  *
- * @param {{ pathname?: string, protocol?: string, hostname?: string } | null | undefined} locationLike Location-shaped object.
+ * @param {{ pathname?: string, protocol?: string } | null | undefined} locationLike Location-shaped object.
+ * @param {Document} [documentLike] Page DOM to inspect.
  * @returns {boolean} Whether the location matches a supported PR page.
  */
-function isLikelyGiteaPrPage(locationLike) {
+function isLikelyGiteaPrPage(locationLike, documentLike = document) {
   const path = (locationLike && locationLike.pathname) || "";
   const protocol = (locationLike && locationLike.protocol) || "";
-  const hostname = (locationLike && locationLike.hostname) || "";
   const isHttp = protocol === "http:" || protocol === "https:";
-  const hostStartsWithGit = /^git/i.test(hostname);
   const giteaPath = /^\/[\w.-]+\/[\w.-]+\/pulls\/\d+\/?$/i.test(path);
-  return isHttp && hostStartsWithGit && giteaPath;
+  const giteaSignature = Boolean(
+    documentLike?.querySelector("#pull-desc-display, .ui.segments.conversation-holder, meta[name='gitea-version'], body[data-signed-user-name] .timeline-item.comment")
+  );
+  return isHttp && giteaPath && giteaSignature;
 }
 
 /**
@@ -44,6 +46,9 @@ function parsePrMetaFromLocation(locationLike) {
  * @returns {{ owner: string | null, repo: string | null, prNumber: number | null, sourceBranch: string | null, targetBranch: string | null }} PR context payload.
  */
 function getPrContext() {
+  if (!isLikelyGiteaPrPage(window.location, document)) {
+    throw new Error("This PR-shaped page does not show Gitea pull request markup.");
+  }
   const prMeta = parsePrMetaFromLocation(window.location);
   const branches = detectPrBranches();
   return {

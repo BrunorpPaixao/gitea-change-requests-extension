@@ -24,7 +24,11 @@ async function resolveSingleConversationCurrentUserName() {
  * @param {HTMLButtonElement} button Action button.
  */
 async function handleSingleConversationCopy(block, button) {
+  clearTimeout(Number(button.dataset.gpreFeedbackTimer || 0));
+  delete button.dataset.gpreFeedbackTimer;
+  button.removeAttribute("data-gpre-feedback");
   button.disabled = true;
+  button.setAttribute("aria-busy", "true");
   renderSingleCopyButtonLabel(button, "Copying...", false);
 
   try {
@@ -91,5 +95,6 @@ async function handleSingleConversationCopy(block, button) {
     setTemporaryButtonState(button, "Copied", 1200);
   } finally {
     button.disabled = false;
+    button.removeAttribute("aria-busy");
   }
 }

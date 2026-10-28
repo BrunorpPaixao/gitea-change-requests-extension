@@ -33,6 +33,7 @@ async function downloadBundleZip({ saveAs } = {}) {
       filename: zipFilename,
       saveAs: Boolean(saveAs),
     });
+    await saveComparisonBaseline(exportData.canonicalPayload);
   } finally {
     setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
   }
