@@ -52,4 +52,4 @@ Invoke **`$git-changes` explicitly** and provide the copied JSON or a JSON file 
 
 Runtime code is plain JavaScript in `popup/`, `content/`, and `shared/`; the popup injects content scripts only into the active PR tab. The extension uses `activeTab`, `tabs`, and `scripting` for page access, `storage` for settings and comparison state, and `clipboardWrite`/`downloads` for exports.
 
-Run `npm ci` and `npm run ci` to check the source. `npm run release:package` writes the current extension to `dist/gitea-pr-review-exporter.zip`. See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidance and [CHANGELOG.md](CHANGELOG.md) for release notes.
+Run `npm ci` and `npm run ci` to check the source. `npm run release:package` writes both `dist/gitea-pr-review-exporter.zip` and `dist/gitea-pr-review-exporter-v<VERSION>.zip`. See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidance and [CHANGELOG.md](CHANGELOG.md) for release notes.
