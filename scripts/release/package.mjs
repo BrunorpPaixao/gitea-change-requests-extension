@@ -2,7 +2,7 @@
  * Release packaging script.
  * Builds the distributable ZIP containing extension runtime assets.
  */
-import { mkdirSync, existsSync, readFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { basename, resolve } from "node:path";
 
@@ -20,6 +20,7 @@ if (!packageName || !packageVersion) {
 }
 
 const outFile = resolve(distDir, `${packageName}.zip`);
+const versionedOutFile = resolve(distDir, `${packageName}-v${packageVersion}.zip`);
 if (existsSync(outFile)) {
   execFileSync("rm", ["-f", outFile], { stdio: "inherit" });
 }
@@ -35,10 +36,11 @@ const include = [
 
 try {
   execFileSync("zip", ["-r", outFile, ...include, "-x", "*/AGENTS.md"], { stdio: "inherit" });
+  copyFileSync(outFile, versionedOutFile);
 } catch (error) {
   throw new Error(
     "Failed to package extension. Ensure `zip` is installed and run from project root."
   );
 }
 
-console.log(`packaged: ${basename(outFile)}`);
+console.log(`packaged: ${basename(outFile)} and ${basename(versionedOutFile)}`);

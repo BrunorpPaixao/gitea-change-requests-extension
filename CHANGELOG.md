@@ -6,6 +6,10 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-29
+### Changed
+- Release packaging now keeps both an unversioned extension ZIP and a versioned ZIP for the same build.
+
 ## [1.1.0] - 2026-10-28
 ### Added
 - Added the `git-changes` skill source to the repository and documented how to rebuild its portable ZIP.
