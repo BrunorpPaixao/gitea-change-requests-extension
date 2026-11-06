@@ -6,6 +6,8 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-11-06
+
 ### Fixed
 - Prevent copy-feedback changes from triggering page-wide refreshes, batch page mutations, and avoid redundant control attribute writes that can feed host-script refresh loops.
 - Add padding around bottom in-page Copy and Select/Deselect controls.
