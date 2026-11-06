@@ -31,6 +31,7 @@ function buildDiagnosticsPayload({ mode, normalizedOptions, stats, decisions, wa
       skippedComments: Number(stats?.skippedComments || 0),
       skippedLastCommentByUser: Number(stats?.skippedLastCommentByUser || 0),
       skippedManuallyDeselected: Number(stats?.skippedManuallyDeselected || 0),
+      skippedQuoteRepliesDefault: Number(stats?.skippedQuoteRepliesDefault || 0),
       skippedNoConversationData: Number(stats?.skippedNoConversationData || 0),
       deduped: Number(stats?.deduped || 0),
     },

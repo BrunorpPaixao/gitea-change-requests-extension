@@ -77,7 +77,11 @@ Helper arrays / counters
 
 ## Quoted replies
 
-A standalone reply containing a uniquely matched quote has conversation `nodeType: "quote_reply"`. The matching comment has the same node type, a `replyTo` array (one entry per distinct source), and a `quotes` array (one entry per matched quote):
+A standalone reply containing a uniquely matched quote has conversation `nodeType: "quote_reply"`. Originals are selected and matched standalone replies are excluded by default. Explicit saved selections override these defaults; the usual filters still apply. A reply that is itself quoted later serves as an original and defaults to included for context. The reply's **Include reply** button includes its authored response; the independent quote **Include** button restores duplicated quote text. Per-node **Copy** explicitly exports the requested node even when it is excluded from bulk selection.
+
+The original comment carries `quotedReplies`, an array of `{ "commentId", "url", "match": "exact_quote_text" }` references to its matched responses. This retains the relationship in original-only exports. `replyTo` remains on the reply and points to the earlier source; it is never reversed. Both properties remain descriptive in compact JSON and survive review queues and comparison payloads. Diagnostics report default reply exclusions under `skippedQuoteRepliesDefault`, separately from manual deselection.
+
+An included reply comment has the same node type, a `replyTo` array (one entry per distinct source), and a `quotes` array (one entry per matched quote):
 
 ```json
 {

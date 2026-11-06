@@ -17,7 +17,8 @@ function evaluateConversationSelection(block, conversation, options = {}) {
   const ignoreResolvedChanges = options.ignoreResolvedChanges === undefined ? true : Boolean(options.ignoreResolvedChanges);
   const ignoreOutdatedChanges = options.ignoreOutdatedChanges === undefined ? true : Boolean(options.ignoreOutdatedChanges);
   const ignoreComments = options.ignoreComments === undefined ? true : Boolean(options.ignoreComments);
-  const manualSelection = valueOrNull(options.manualSelection);
+  const explicitManualSelection = valueOrNull(options.manualSelection);
+  const manualSelection = explicitManualSelection || getDefaultQuoteConversationSelection(block, conversation);
 
   const resolution = getConversationResolution(block);
   const outdated = Boolean(conversation?.outdated ?? isOutdatedConversation(block));
@@ -42,7 +43,7 @@ function evaluateConversationSelection(block, conversation, options = {}) {
       resolution,
       outdated,
       lastCommentByUser,
-      skipped: "manual_exclude",
+      skipped: explicitManualSelection ? "manual_exclude" : "quote_reply_default",
     };
   }
 
@@ -77,7 +78,7 @@ function evaluateConversationSelection(block, conversation, options = {}) {
     };
   }
 
-  if (manualSelection === MANUAL_SELECTION_INCLUDE_VALUE) {
+  if (explicitManualSelection === MANUAL_SELECTION_INCLUDE_VALUE) {
     return {
       selected: true,
       reason: "included_manual_override",

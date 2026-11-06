@@ -55,7 +55,7 @@ function refreshQuoteReplyIndex() {
     const raw = rawElement ? rawElement.textContent || "" : null;
     const quotes = Array.from(rendered.querySelectorAll("blockquote")).filter((quote) => !quote.parentElement.closest("blockquote"));
     const spans = raw === null ? [] : quoteMarkdownSpans(raw);
-    const entry = { root, rendered, id, quotes: [], rawElement };
+    const entry = { root, rendered, id, url: new URL(`#${anchorId}`, window.location.href).href, quotes: [], rawElement };
     for (let index = 0; index < quotes.length; index += 1) {
       const quote = quotes[index];
       const matches = byText.get(quoteComparableText(quote)) || [];
@@ -88,10 +88,26 @@ function isQuoteTextIncluded(record) {
   return MANUAL_SELECTION_STATE_BY_CONVERSATION_KEY.get(record.key) === MANUAL_SELECTION_INCLUDE_VALUE;
 }
 
+/** Originals provide context; standalone quoted replies require explicit inclusion. */
+function getDefaultQuoteConversationSelection(block, conversation) {
+  const timeline = [conversation?.rootComment, ...(conversation?.comments || [])];
+  if (timeline.some((comment) => comment?.quotedReplies?.length)) return MANUAL_SELECTION_INCLUDE_VALUE;
+  return isStandaloneTimelineComment(block) && conversation?.rootComment?.nodeType === "quote_reply"
+    ? MANUAL_SELECTION_EXCLUDE_VALUE : null;
+}
+
+function getEffectiveConversationSelection(block, conversation) {
+  return getManualConversationSelection(block, conversation) || getDefaultQuoteConversationSelection(block, conversation);
+}
+
 /** Keep authored reply text; omit only positively matched duplicate quote spans by default. */
 function extractQuoteReplyData(node, fallbackText) {
   const entry = QUOTE_REPLY_ENTRIES.find((item) => item.root === node || item.root.contains(node) || node.contains(item.root));
-  if (!entry?.quotes.length) return { text: fallbackText };
+  if (!entry) return { text: fallbackText };
+  const quotedReplies = Array.from(new Map(QUOTE_REPLY_RECORDS.filter((record) => record.original === entry.root)
+    .map((record) => [record.entry.id, { commentId: record.entry.id, url: record.entry.url, match: "exact_quote_text" }])).values());
+  const sourceMetadata = quotedReplies.length ? { quotedReplies } : {};
+  if (!entry.quotes.length) return { text: fallbackText, ...sourceMetadata };
   let text;
   if (entry.rawElement) {
     let raw = entry.rawElement.textContent || "";
@@ -110,6 +126,7 @@ function extractQuoteReplyData(node, fallbackText) {
   const replyTo = Array.from(new Map(entry.quotes.map((record) => [record.replyTo.commentId, record.replyTo])).values());
   return {
     text,
+    ...sourceMetadata,
     nodeType: "quote_reply",
     replyTo,
     quotes: entry.quotes.map((record) => ({ nodeType: "quote", included: isQuoteTextIncluded(record), replyTo: record.replyTo })),

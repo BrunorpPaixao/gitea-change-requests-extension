@@ -47,6 +47,7 @@ test("unique earlier quotes become reply nodes with duplicate text excluded by d
     assert.equal(controls.querySelector("a").textContent, "Reply to #100");
     assert.equal(window.collectActionableConversationNodes().length, 2, "quotes do not inflate conversation counts");
 
+    window.MANUAL_SELECTION_STATE_BY_CONVERSATION_KEY.set("issuecomment-200", "include");
     const payload = await window.GPREContentCore.scrape(options);
     const conversation = payload.conversations.find((item) => item.conversationId === "200");
     assert.equal(conversation.nodeType, "quote_reply");
@@ -72,6 +73,7 @@ test("Include/Exclude persists per quote and changes full/single export text and
   let savedState;
   try {
     const { window } = harness;
+    window.MANUAL_SELECTION_STATE_BY_CONVERSATION_KEY.set("issuecomment-200", "include");
     const before = await window.GPREContentCore.scrape(options);
     const record = window.QUOTE_REPLY_RECORDS[0];
     const controls = record.quote.querySelector(".gpre-quote-controls");
@@ -238,5 +240,95 @@ test("multiple replies use distinct stable colors and separate vertical lanes", 
     window.QUOTE_REPLY_RECORDS[1].quote.getBoundingClientRect = () => ({ left: 310, top: 750, width: 600, height: 100 });
     window.drawQuoteReplyArrows();
     assert.deepEqual(Array.from(svg.querySelectorAll("linearGradient stop:first-child"), (stop) => stop.getAttribute("stop-color")), colors, "layout changes preserve each arrow's color");
+  } finally { harness.dispose(); }
+});
+
+test("default selection exports the original and leaves quoted replies off with reverse references", async () => {
+  const harness = await harnessFor();
+  try {
+    const { window } = harness;
+    const source = window.document.getElementById("issuecomment-100");
+    const response = window.document.getElementById("issuecomment-200");
+    const sourceButton = source.querySelector("[data-gpre-manual-selection]");
+    const replyButton = response.querySelector("[data-gpre-manual-selection]");
+    assert.equal(sourceButton.getAttribute("aria-pressed"), "true");
+    assert.equal(sourceButton.textContent, "deselect");
+    assert.equal(replyButton.getAttribute("aria-pressed"), "false");
+    assert.equal(replyButton.textContent, "include reply");
+    assert.match(replyButton.title, /excluded by default/);
+    assert.equal((await window.getManualSelectionSummary()).selectedCount, 1);
+    const preview = await harness.send({ type: "TEST_SELECTION", options });
+    assert.equal(preview.count, 1);
+    assert.equal(preview.stats.skippedQuoteRepliesDefault, 1);
+    assert.equal(source.querySelectorAll(".gpre-highlight-badge").length, 1);
+    assert.equal(response.querySelectorAll(".gpre-highlight-badge").length, 0);
+    const payload = await window.GPREContentCore.scrape(options);
+    assert.deepEqual(Array.from(payload.conversations, (item) => item.conversationId), ["100"]);
+    const original = payload.conversations[0].rootComment;
+    assert.equal(original.text, window.normalizeCommentText(originalRaw));
+    assert.equal(original.replyTo, undefined, "the original does not reply to its later response");
+    assert.equal(original.quotedReplies[0].commentId, "200");
+    assert.equal(original.quotedReplies[0].url, "https://git.example.com/acme/repo/pulls/42#issuecomment-200");
+    const schema = JSON.parse(readFileSync(new URL("../schemas/export-schema-v2.1.json", import.meta.url), "utf8"));
+    const validate = new Ajv2020({ strict: false }).compile(schema);
+    assert.equal(validate(payload), true, JSON.stringify(validate.errors));
+    const compact = window.GPREExportSerializer.transformForExport(payload, { shortKeys: true });
+    assert.equal(compact.th[0].root.quotedReplies[0].commentId, "200");
+
+    // A default-selected original must turn off on its first explicit toggle.
+    sourceButton.click();
+    await window.GPREManualSelectionUiRefreshPromise;
+    assert.equal(sourceButton.getAttribute("aria-pressed"), "false");
+    assert.equal((await harness.send({ type: "TEST_SELECTION", options })).count, 0);
+    sourceButton.click();
+    await window.GPREManualSelectionUiRefreshPromise;
+    replyButton.click();
+    await window.GPREManualSelectionUiRefreshPromise;
+    assert.equal(replyButton.textContent, "exclude reply");
+    const included = await window.GPREContentCore.scrape(options);
+    assert.equal(included.conversations.length, 2);
+    const includedReply = included.conversations.find((item) => item.conversationId === "200");
+    assert.equal(includedReply.rootComment.replyTo[0].commentId, "100");
+    assert.equal(includedReply.rootComment.text, "Updated retries.", "reply selection is independent of quote text inclusion");
+  } finally { harness.dispose(); }
+});
+
+test("multiple replies retain one selected original and all reverse links without bypassing filters", async () => {
+  const second = comment("201", `<blockquote>${originalRendered}</blockquote><p>Another response.</p>`, `${quotedRaw}\n\nAnother response.`);
+  const harness = await harnessFor(base + second);
+  try {
+    const { window } = harness;
+    const payload = await window.GPREContentCore.scrape(options);
+    assert.equal(payload.conversations.length, 1);
+    assert.equal(payload.conversations[0].conversationId, "100");
+    assert.deepEqual(Array.from(payload.conversations[0].rootComment.quotedReplies, (item) => item.commentId), ["200", "201"]);
+    assert.equal((await window.getManualSelectionSummary()).selectedCount, 1);
+    assert.equal((await window.getManualSelectionSummary()).totalCount, 3);
+    const ignored = await window.GPREContentCore.scrape({ ...options, ignoreComments: true });
+    assert.equal(ignored.conversations.length, 0);
+    const byUser = await window.GPREContentCore.scrape({ ...options, userName: "reviewer", ignoreWhereLastCommentIsFromUser: true });
+    assert.equal(byUser.conversations.length, 0);
+    window.persistManualSelectionState = async () => { throw new Error("storage failed"); };
+    const source = window.document.getElementById("issuecomment-100");
+    await assert.rejects(window.toggleManualConversationSelection(source, source.querySelector("[data-gpre-manual-selection]")), /storage failed/);
+    assert.equal(window.MANUAL_SELECTION_STATE_BY_CONVERSATION_KEY.has("issuecomment-100"), false);
+    assert.equal(window.getEffectiveConversationSelection(source, window.extractCopyableConversation(source)), "include");
+  } finally { harness.dispose(); }
+});
+
+test("an intermediate quoted reply stays selected when it is the original for a later reply", async () => {
+  const middleRaw = `${quotedRaw}\n\nUpdated retries.`;
+  const middleRendered = `<blockquote>${originalRendered}</blockquote><p>Updated retries.</p>`;
+  const leafRaw = middleRaw.split("\n").map((line) => `> ${line}`).join("\n");
+  const leaf = comment("300", `<blockquote>${middleRendered}</blockquote><p>Final response.</p>`, `${leafRaw}\n\nFinal response.`);
+  const harness = await harnessFor(base + leaf);
+  try {
+    const payload = await harness.window.GPREContentCore.scrape(options);
+    assert.deepEqual(Array.from(payload.conversations, (item) => item.conversationId), ["100", "200"]);
+    const middle = payload.conversations[1].rootComment;
+    assert.equal(middle.replyTo[0].commentId, "100");
+    assert.equal(middle.quotedReplies[0].commentId, "300");
+    assert.equal(middle.text, "Updated retries.");
+    assert.equal(harness.window.document.getElementById("issuecomment-300").querySelector("[data-gpre-manual-selection]").getAttribute("aria-pressed"), "false");
   } finally { harness.dispose(); }
 });

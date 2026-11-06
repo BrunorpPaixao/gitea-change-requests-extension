@@ -352,6 +352,7 @@
         "authorRole": { "type": "string" },
         "nodeType": {"const": "quote_reply"},
         "replyTo": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/quoteReplyReference"}},
+        "quotedReplies": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/quoteReplyReference"}},
         "quotes": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/quote"}},
         "datetime": { "type": ["string", "null"] },
         "text": { "type": "string" }
