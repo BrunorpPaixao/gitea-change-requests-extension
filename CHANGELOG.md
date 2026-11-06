@@ -6,6 +6,11 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-11-06
+
+### Added
+- Show the installed extension version in small text beside the popup subtitle.
+
 ### Fixed
 - Removed an unnecessary unload listener that triggered a permissions-policy violation when initializing conversation copy and selection controls.
 
