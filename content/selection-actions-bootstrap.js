@@ -32,14 +32,8 @@ function initializeSingleConversationCopyButtons() {
     queueManualSelectionUiRefresh({ applyHighlights: false });
   });
   MANUAL_SELECTION_MUTATION_OBSERVER.observe(document.body, { childList: true, subtree: true });
-  window.addEventListener(
-    "unload",
-    () => {
-      MANUAL_SELECTION_MUTATION_OBSERVER?.disconnect();
-      MANUAL_SELECTION_MUTATION_OBSERVER = null;
-    },
-    { once: true }
-  );
+  // Keep observing for the document's lifetime, including back/forward cache restores.
+  // The browser releases the observer with the document; no unload handler is needed.
 }
 
 /**
