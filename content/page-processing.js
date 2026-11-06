@@ -6,6 +6,7 @@ function markSelectionContentChanges(mutations) {
     if (isConversationActionUiMutation(mutation)) continue;
     const target = mutation.target instanceof Element ? mutation.target : mutation.target?.parentElement;
     if (!target) continue;
+    if (mutation.type === "attributes" && mutation.oldValue === target.getAttribute(mutation.attributeName)) continue;
     if (mutation.type === "attributes" && mutation.attributeName === "class") {
       const siteClasses = (value) => String(value || "").split(/\s+/).filter((name) => name && !name.startsWith("gpre-")).sort().join(" ");
       if (siteClasses(mutation.oldValue) === siteClasses(target.className)) continue;

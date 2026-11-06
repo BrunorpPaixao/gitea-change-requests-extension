@@ -36,7 +36,7 @@ function initializeSingleConversationCopyButtons() {
       queueManualSelectionUiRefresh({ applyHighlights: false });
     }, 50);
   });
-  MANUAL_SELECTION_MUTATION_OBSERVER.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeOldValue: true, attributeFilter: ["class", "id", "data-poster", "data-owner", "data-comment-id", "data-action", "datetime", "data-user", "data-username", "data-author", "href", "value", "hidden", "aria-expanded"] });
+  MANUAL_SELECTION_MUTATION_OBSERVER.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeOldValue: true, attributeFilter: ["title", "data-tooltip-content", "class", "id", "data-poster", "data-owner", "data-comment-id", "data-action", "datetime", "data-user", "data-username", "data-author", "href", "value", "hidden", "aria-expanded"] });
   // Keep observing for the document's lifetime, including back/forward cache restores.
   // The browser releases the observer with the document; no unload handler is needed.
 }

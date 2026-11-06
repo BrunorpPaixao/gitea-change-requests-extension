@@ -45,3 +45,14 @@ test("earlier insertion and removal update quote dependencies before export", as
     assert.ok(payload.conversations[0].rootComment.text.startsWith(">"));
   } finally { h.dispose(); }
 });
+
+test("timestamp attribute edits invalidate cached comment evidence before export", async () => {
+  const body = comment(1, "Feedback").replace('<div class="render-content">', '<time title="2026-01-01T00:00:00Z"></time><div class="render-content">');
+  const h = createContentHarness({ html: `<html><body><div id="pull-desc-display" class="pull-desc">feature into main</div>${body}</body></html>`, url: "https://git.example.com/acme/repo/pulls/42", storageLocal: { [popupSettingsStorageKey]: options } });
+  try {
+    await h.window.GPREManualSelectionUiRefreshPromise;
+    h.window.document.querySelector("time").setAttribute("title", "2026-02-01T00:00:00Z");
+    const payload = await h.window.GPREContentCore.scrape(options);
+    assert.equal(payload.conversations[0].rootComment.datetime, "2026-02-01T00:00:00.000Z");
+  } finally { h.dispose(); }
+});
