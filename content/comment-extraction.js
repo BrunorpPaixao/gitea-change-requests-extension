@@ -120,7 +120,7 @@ function extractComment(node) {
     id,
     author,
     datetime,
-    text,
+    ...extractQuoteReplyData(node, text),
   };
 }
 
@@ -247,6 +247,7 @@ function normalizeRichText(container) {
   }
 
   const clone = container.cloneNode(true);
+  for (const control of clone.querySelectorAll("[data-gpre-quote-ui]")) control.remove();
   for (const br of clone.querySelectorAll("br")) {
     br.replaceWith(" ");
   }

@@ -58,6 +58,7 @@ async function refreshManualSelectionUi(options = {}) {
     return;
   }
   await ensureManualSelectionStateLoaded();
+  refreshQuoteReplyUi();
   const popupSettings = (await getPopupSettingsFromStorage()) || {};
   const ignoreComments = popupSettings.ignoreComments !== false;
   const blocks = collectActionableConversationNodes();

@@ -75,6 +75,33 @@ Helper arrays / counters
 - `commentCount -> cc`
 - `hasReplies -> hr`
 
+## Quoted replies
+
+A standalone reply containing a uniquely matched quote has conversation `nodeType: "quote_reply"`. The matching comment has the same node type, a `replyTo` array (one entry per distinct source), and a `quotes` array (one entry per matched quote):
+
+```json
+{
+  "nodeType": "quote_reply",
+  "text": "Updated retries.",
+  "replyTo": [
+    { "commentId": "516338", "url": "https://git.example.com/team/repo/pulls/1633#issuecomment-516338", "match": "exact_quote_text" }
+  ],
+  "quotes": [
+    {
+      "nodeType": "quote",
+      "included": false,
+      "replyTo": { "commentId": "516338", "url": "https://git.example.com/team/repo/pulls/1633#issuecomment-516338", "match": "exact_quote_text" }
+    }
+  ]
+}
+```
+
+These optional fields extend `2.1-factual`; ordinary comment payloads are unchanged. `nodeType`, `replyTo`, `quotes`, and their nested field names remain descriptive in shortened JSON, as unknown keys already do. Review queues and change payloads retain comment metadata. Code-thread types remain `change`, `resolved_change`, or `outdated_change`; individual quoted replies within them carry comment-level metadata.
+
+The matcher compares complete rendered quote text with complete earlier comment text, preserving case and punctuation and normalizing Unicode/whitespace. It requires one earlier source, never chooses between identical candidates, and never matches a later comment. This is a textual association, not server-supplied reply metadata or a claim about intent. No relation is synthesized for unmatched/partial quotes. For raw Markdown, omission additionally requires a whole quote span matching the original raw text; unsupported Markdown is preserved. Fenced code is never treated as a quote.
+
+Matched quote text is excluded from `text` by default. Include restores that quote in place, while Exclude removes only that duplicated span; the reply's authored text and comment identity remain. Quote-only replies may have empty `text`. Metadata never duplicates the omitted quote body. The original URL remains available even if filters exclude it from this export. Choices are stored alongside manual selections under a distinct `quote:` key scoped to the PR, reply ID, quote position, and quote-text hash. They change fingerprints/comparison hashes without altering filter behavior or conversation counts.
+
 ## How unresolved vs resolved is detected
 
 The scraper evaluates each `.ui.segments.conversation-holder` block and uses these signals:

@@ -38,6 +38,8 @@ const jsFiles = [
   "content/standalone-comment-utils.js",
   "content/selection-summary-ui.js",
   "content/selection-actions-bootstrap.js",
+  "content/quote-replies.js",
+  "content/quote-reply-ui.js",
   "content/manual-selection-export.js",
   "content/export-conversation-facts-utils.js",
   "content/export-envelope-sections.js",

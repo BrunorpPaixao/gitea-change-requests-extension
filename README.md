@@ -30,8 +30,11 @@ The selected-node counter counts each copyable conversation or standalone commen
 | **Download Bundle (ZIP)** | Full JSON plus the PR diff. **Download Diff** is available separately. |
 | In-page **Copy** | JSON for one thread or standalone comment. |
 | In-page **Select** / **Deselect** | Highlight and store a manual selection. Manual inclusion still follows the active filters. The in-page preset buttons copy JSON in the chosen format. |
+| Quote **Include** / **Exclude** | Control duplicated quoted text independently of the reply. Matched quotes are excluded by default; the reply's own text stays in the export. |
 
 A complete full export, review queue, or bundle saves a comparison baseline containing IDs, filters, and hashes, without comment bodies. Use **Clear comparison history for this PR** to remove it. Changing filters requires a new complete export before **Copy changes** is available again.
+
+Quoted replies are linked to a unique earlier comment with the same complete rendered text, normalizing whitespace. A **Reply to #…** link and fading arrow show the source. Matching replies export as `quote_reply` nodes with comment-level `replyTo` references and quote inclusion metadata. The relation is explicitly marked `exact_quote_text`: it records a text match, not confirmed reply intent. Unmatched, partial, ambiguous, or unsafe-to-remove quotes remain intact. Quote choices are saved per PR and apply to full exports, single-copy, review queues, and changes; quote nodes do not increase conversation counts. A referenced original may be outside the current filtered export.
 
 ## Optional AI handoff
 

@@ -127,7 +127,8 @@ function renderHighlightDebugOverlay(selectedBlocks) {
       const isStandaloneComment = isStandaloneTimelineComment(block);
       const highlightTarget = resolveHighlightTarget(block, isStandaloneComment);
       const wrapperTargets = resolveHighlightWrapperTargets(block, isStandaloneComment);
-      const targets = [highlightTarget, ...wrapperTargets].filter((node) => node instanceof Element);
+      const quoteTargets = QUOTE_REPLY_RECORDS.filter((record) => block.contains(record.quote)).map((record) => record.quote);
+      const targets = [highlightTarget, ...wrapperTargets, ...quoteTargets].filter((node) => node instanceof Element);
 
       for (const node of targets) {
         if (seenNodes.has(node)) {
@@ -140,7 +141,7 @@ function renderHighlightDebugOverlay(selectedBlocks) {
           continue;
         }
 
-        const role = node === highlightTarget ? "node" : "wrapper";
+        const role = quoteTargets.includes(node) ? "quote" : node === highlightTarget ? "node" : "wrapper";
         const label = document.createElement("div");
         label.className = "gpre-debug-node-label";
         label.setAttribute("data-gpre-debug-node", "1");
@@ -220,7 +221,9 @@ function buildDebugNodeLabel(node, block, isStandaloneComment, role) {
     parts.push(node.tagName.toLowerCase());
   }
 
-  parts.push(isStandaloneComment ? "standalone comment" : "conversation");
+  const quoteRecord = QUOTE_REPLY_RECORDS.find((record) => record.quote === node);
+  const isQuoteReply = QUOTE_REPLY_ENTRIES.some((entry) => entry.quotes.length && (entry.root === block || block.contains(entry.root)));
+  parts.push(quoteRecord ? `quote → #${quoteRecord.replyTo.commentId}` : isQuoteReply ? "quote reply" : isStandaloneComment ? "standalone comment" : "conversation");
 
   const resolution = getConversationResolution(block);
   if (resolution) {

@@ -128,7 +128,7 @@ function buildThreadKey(conversation) {
  */
 function resolveConversationNodeType(block, conversation) {
   if (isStandaloneTimelineComment(block)) {
-    return "comment";
+    return conversation?.rootComment?.nodeType === "quote_reply" ? "quote_reply" : "comment";
   }
   if (conversation?.outdated) {
     return "outdated_change";
