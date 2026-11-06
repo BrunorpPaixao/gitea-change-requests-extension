@@ -49,6 +49,7 @@ Top-level keys:
 
 Conversation keys:
 - `conversationId`
+- `nodeType` (including `quote_reply` for matched standalone replies)
 - `filePath`
 - `threadUrl`
 - `resolved`
@@ -91,6 +92,15 @@ For the exact accepted short keys, read [references/short-key-map.json](referenc
 - Use `codeContext` only as grounding evidence when present.
 - Use `completeness` and `exportOptions` to assess confidence and possible omissions.
 - Never treat exporter data as semantic judgment (priority/category/next actor/workflow state).
+
+### Quoted replies
+
+- Comment `replyTo[]` points from a quoted reply to earlier original comments. Original comments carry reverse `quotedReplies[]` references, including references to responses omitted from the workset. Each reference has `commentId`, `url`, and `match: "exact_quote_text"`. These names remain descriptive in short-key exports. Do not invent a `reply_to` alias or reverse the direction.
+- `exact_quote_text` records a unique normalized text match, not server-confirmed reply intent, agreement, resolution, or implementation status. Evaluate the included authored text and current code normally.
+- Originals default to selected and matched standalone replies default to excluded. Explicit selections and normal filters can change this. A reply quoted later may be included as an intermediate original. `quotedReplies` does not mean the referenced response text is present. Process the included original even when its responses are absent.
+- Included reply comments can have `nodeType: "quote_reply"` and `quotes[]` entries with `nodeType: "quote"`, `included`, and a `replyTo` reference. Quote-text inclusion is separate from reply selection. `included: false` means repeated quoted text was removed, not that the authored reply was removed. Do not count quote metadata as extra work items or implement the same request again because it is quoted.
+- Resolve references against included comments by comment ID when available, including comments inside code threads. If a source is missing because of filters or scope, report that context gap when it affects a decision. Never reconstruct omitted text or assume an excluded response addressed the original. A quote-only reply may have empty `text`.
+- Summary pages expose relationship counts when present. Use `--item N` to inspect actual references and authored evidence. Full, short-key, review queue, and delta inputs retain the same comment metadata.
 
 ## Scope Handling
 

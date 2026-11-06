@@ -47,7 +47,7 @@ function initializeSingleConversationCopyButtons() {
 function isConversationActionUiMutation(mutation) {
   const selector = `.${SINGLE_COPY_BUTTON_CLASS}, .${MANUAL_SELECTION_BUTTON_CLASS}, .gpre-conversation-actions,
     #${MANUAL_SELECTION_SUMMARY_WRAPPER_ID}, #${MANUAL_SELECTION_DEBUG_OVERLAY_ID},
-    [data-gpre-highlight-badge], [data-gpre-clipboard]`;
+    [data-gpre-highlight-badge], [data-gpre-clipboard], [data-gpre-quote-ui]`;
   const isOwned = (node) => node instanceof Element && Boolean(node.closest(selector));
   const target = mutation.target instanceof Element ? mutation.target : mutation.target?.parentElement;
   if (isOwned(target)) {
@@ -64,6 +64,8 @@ function injectSingleCopyButtons() {
   if (!document || !document.querySelectorAll) {
     return;
   }
+  refreshQuoteReplyIndex();
+  refreshQuoteReplyUi();
   const blocks = collectActionableConversationNodes();
   for (const block of blocks) {
     if (!(block instanceof Element)) {

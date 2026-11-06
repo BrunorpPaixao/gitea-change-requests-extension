@@ -8,8 +8,9 @@
  *
  * @param {HTMLButtonElement} button Selection button.
  * @param {string | null} selectionMode Current manual selection mode.
+ * @param {boolean} isQuoteReply Whether this is a standalone quoted reply.
  */
-function updateManualSelectionButtonVisualState(button, selectionMode) {
+function updateManualSelectionButtonVisualState(button, selectionMode, isQuoteReply = false) {
   const isSelected = selectionMode === MANUAL_SELECTION_INCLUDE_VALUE;
   for (const [className, enabled] of [["is-selected", isSelected], ["basic", !isSelected], ["positive", isSelected], ["negative", false]]) {
     if (button.classList.contains(className) !== enabled) {
@@ -21,13 +22,13 @@ function updateManualSelectionButtonVisualState(button, selectionMode) {
     button.setAttribute("aria-pressed", pressed);
   }
   const label = button.closest(".timeline-item.comment") ? "comment" : "conversation";
-  const nextTitle = isSelected
-    ? `Manual selection active. Click to deselect this ${label}.`
-    : `Select this ${label} for the export`;
+  const nextTitle = isQuoteReply
+    ? isSelected ? "Include reply is active. Click to exclude this reply." : "Quoted replies are excluded by default. Click to include this reply."
+    : isSelected ? `Selected for export. Click to deselect this ${label}.` : `Select this ${label} for the export`;
   if (button.getAttribute("title") !== nextTitle) {
     button.setAttribute("title", nextTitle);
   }
-  const nextText = isSelected ? "deselect" : "select";
+  const nextText = isQuoteReply ? isSelected ? "exclude reply" : "include reply" : isSelected ? "deselect" : "select";
   if (button.textContent !== nextText) {
     button.textContent = nextText;
   }
@@ -235,7 +236,6 @@ function ensureConversationActionButtonStyles() {
       }
       .${MANUAL_SELECTION_SELECTED_CLASS} {
         position: relative !important;
-        background: transparent !important;
         box-shadow: inset 0 0 0 4px #2fb170 !important;
         border-radius: 8px !important;
       }

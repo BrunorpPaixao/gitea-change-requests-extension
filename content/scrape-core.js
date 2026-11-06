@@ -44,6 +44,7 @@ async function collectConversations(options) {
   }
 
   const startedAt = Date.now();
+  await ensureManualSelectionStateLoaded();
   const normalizedOptions = normalizeCollectionOptions(options);
   const state = createCollectionState(normalizedOptions, startedAt);
 
@@ -51,6 +52,7 @@ async function collectConversations(options) {
   applyGlobalExpandCompleteness(state, globalExpand);
 
   const conversationBlocks = Array.from(document.querySelectorAll(".ui.segments.conversation-holder"));
+  refreshQuoteReplyIndex();
   const allStandaloneCommentBlocks = collectStandaloneCommentBlocks(conversationBlocks);
   const standaloneCommentBlocks = normalizedOptions.ignoreComments ? [] : allStandaloneCommentBlocks;
   const allCollectableBlocks = [...conversationBlocks, ...standaloneCommentBlocks];

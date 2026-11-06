@@ -22,7 +22,8 @@ async function toggleManualConversationSelection(block, button) {
 
     const refreshPromise = (async () => {
       await ensureManualSelectionStateLoaded();
-      const current = MANUAL_SELECTION_STATE_BY_CONVERSATION_KEY.get(conversationKey) || null;
+      const previous = MANUAL_SELECTION_STATE_BY_CONVERSATION_KEY.get(conversationKey) || null;
+      const current = getEffectiveConversationSelection(block, conversation);
       const next =
         current === MANUAL_SELECTION_INCLUDE_VALUE ? MANUAL_SELECTION_EXCLUDE_VALUE : MANUAL_SELECTION_INCLUDE_VALUE;
       if (next) {
@@ -33,8 +34,8 @@ async function toggleManualConversationSelection(block, button) {
       try {
         await persistManualSelectionState();
       } catch (error) {
-        if (current) {
-          MANUAL_SELECTION_STATE_BY_CONVERSATION_KEY.set(conversationKey, current);
+        if (previous) {
+          MANUAL_SELECTION_STATE_BY_CONVERSATION_KEY.set(conversationKey, previous);
         } else {
           MANUAL_SELECTION_STATE_BY_CONVERSATION_KEY.delete(conversationKey);
         }
@@ -58,6 +59,7 @@ async function refreshManualSelectionUi(options = {}) {
     return;
   }
   await ensureManualSelectionStateLoaded();
+  refreshQuoteReplyUi();
   const popupSettings = (await getPopupSettingsFromStorage()) || {};
   const ignoreComments = popupSettings.ignoreComments !== false;
   const blocks = collectActionableConversationNodes();
@@ -78,7 +80,7 @@ async function refreshManualSelectionUi(options = {}) {
     }
     eligibleBlocks.push(block);
     const selected = options.applyHighlights === true
-      ? getManualConversationSelection(block, conversation) === MANUAL_SELECTION_INCLUDE_VALUE
+      ? getEffectiveConversationSelection(block, conversation) === MANUAL_SELECTION_INCLUDE_VALUE
       : isConversationSelectedForSummary(block, conversation);
     if (selected) {
       selectedBlocks.push(block);
@@ -111,10 +113,11 @@ function refreshConversationSelectionButtonState(block) {
     return;
   }
   const conversationKey = buildConversationSelectionKey(block, conversation);
-  const selectionMode = conversationKey ? MANUAL_SELECTION_STATE_BY_CONVERSATION_KEY.get(conversationKey) || null : null;
+  const selectionMode = conversationKey ? getEffectiveConversationSelection(block, conversation) : null;
   const button = block.querySelector(`.${MANUAL_SELECTION_BUTTON_CLASS}`);
   if (button instanceof HTMLButtonElement) {
-    updateManualSelectionButtonVisualState(button, selectionMode);
+    const isQuoteReply = isStandaloneTimelineComment(block) && conversation.rootComment?.nodeType === "quote_reply";
+    updateManualSelectionButtonVisualState(button, selectionMode, isQuoteReply);
     const nextMode = selectionMode || "none";
     if (button.getAttribute("data-gpre-selection-mode") !== nextMode) {
       button.setAttribute("data-gpre-selection-mode", nextMode);

@@ -35,6 +35,8 @@ async function handleSingleConversationCopy(block, button) {
     if (!isStandaloneTimelineComment(block)) {
       await expandConversationIfNeeded(block);
     }
+    await ensureManualSelectionStateLoaded();
+    refreshQuoteReplyIndex();
     const conversation = extractCopyableConversation(block);
     if (!conversation) {
       setTemporaryButtonState(button, "No comment data", 1800);

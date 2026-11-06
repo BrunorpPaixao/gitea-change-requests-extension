@@ -6,6 +6,17 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 
 ## [Unreleased]
 
+### Added
+- Identify uniquely matched quoted replies with source links, fading connection arrows, and `quote_reply` / `quote` node metadata including text-match-based `replyTo` references.
+- Add per-quote Include/Exclude controls: duplicated quote text is excluded by default while the reply's own text is retained. Choices persist per PR across copy/export formats.
+
+### Changed
+- Update the git-changes skill and portable preparer for quote reply metadata, original-first selection defaults, and relationship-aware summaries; require skill maintenance alongside future export changes.
+- Select quoted originals and exclude matched standalone replies by default. Add explicit Include reply/Exclude reply controls and retain response references on originals via `quotedReplies`.
+- Give reply arrows distinct randomly seeded colors that stay stable during redraws, with successive vertical paths spaced 4px farther left.
+- Route quote arrows with square left/up/right segments while retaining the fading line and source arrowhead.
+- Preserve Gitea's own comment, header, body, and quote backgrounds when selecting nodes or changing quote inclusion.
+
 ## [1.1.3] - 2026-11-06
 
 ### Fixed

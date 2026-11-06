@@ -92,7 +92,7 @@ async function getManualSelectionSummary() {
 function isConversationSelectedForSummary(block, conversation) {
   return SELECTION_HIGHLIGHT_BLOCKS !== null
     ? SELECTION_HIGHLIGHT_BLOCKS.has(block)
-    : getManualConversationSelection(block, conversation) === MANUAL_SELECTION_INCLUDE_VALUE;
+    : getEffectiveConversationSelection(block, conversation) === MANUAL_SELECTION_INCLUDE_VALUE;
 }
 
 /**

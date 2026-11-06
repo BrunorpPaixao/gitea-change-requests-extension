@@ -45,18 +45,46 @@ def normalize_short_keys(value, path=""):
     return normalized
 
 
+def validate_quote_reference(value, label):
+    reference = require_object(value, label)
+    for key in ("commentId", "url"):
+        if not isinstance(reference.get(key), str) or not reference[key].strip():
+            raise InputError(f"{label}.{key} must be a nonempty string")
+    if reference.get("match") != "exact_quote_text":
+        raise InputError(f"{label}.match must be exact_quote_text")
+
+
+def validate_comment(value, label):
+    comment = require_object(value, label)
+    if not isinstance(comment.get("text"), str):
+        raise InputError(f"{label}.text must be a string")
+    for key in ("replyTo", "quotedReplies"):
+        if key in comment:
+            references = require_array(comment[key], f"{label}.{key}")
+            if not references:
+                raise InputError(f"{label}.{key} must not be empty")
+            for index, reference in enumerate(references):
+                validate_quote_reference(reference, f"{label}.{key}[{index}]")
+    if "quotes" in comment:
+        quotes = require_array(comment["quotes"], f"{label}.quotes")
+        if not quotes:
+            raise InputError(f"{label}.quotes must not be empty")
+        for index, value in enumerate(quotes):
+            quote_label = f"{label}.quotes[{index}]"
+            quote = require_object(value, quote_label)
+            if quote.get("nodeType") != "quote" or not isinstance(quote.get("included"), bool):
+                raise InputError(f"{quote_label} must have nodeType quote and boolean included")
+            validate_quote_reference(quote.get("replyTo"), f"{quote_label}.replyTo")
+
+
 def validate_conversations(items, label):
     require_array(items, label)
     for index, item in enumerate(items):
         require_object(item, f"{label}[{index}]")
-        root = require_object(item.get("rootComment"), f"{label}[{index}].rootComment")
-        if not isinstance(root.get("text"), str):
-            raise InputError(f"{label}[{index}].rootComment.text must be a string")
+        validate_comment(item.get("rootComment"), f"{label}[{index}].rootComment")
         comments = require_array(item.get("comments"), f"{label}[{index}].comments")
         for reply_index, reply in enumerate(comments):
-            require_object(reply, f"{label}[{index}].comments[{reply_index}]")
-            if not isinstance(reply.get("text"), str):
-                raise InputError(f"{label}[{index}].comments[{reply_index}].text must be a string")
+            validate_comment(reply, f"{label}[{index}].comments[{reply_index}]")
 
 
 def validate_completeness(value):
@@ -143,6 +171,14 @@ def summary(prepared, offset, limit):
             "filePath": item.get("filePath"),
             "threadUrl": item.get("threadUrl"),
         })
+        timeline = [item["rootComment"], *item["comments"]]
+        quote_counts = {
+            "replyToCount": sum(len(comment.get("replyTo", [])) for comment in timeline),
+            "quotedReplyCount": sum(len(comment.get("quotedReplies", [])) for comment in timeline),
+            "excludedQuoteCount": sum(not quote["included"] for comment in timeline for quote in comment.get("quotes", [])),
+        }
+        if any(quote_counts.values()) or any("quotes" in comment for comment in timeline):
+            page[-1].update(quote_counts)
     return {
         **{key: prepared[key] for key in ("format", "schemaVersion", "scope", "source", "filters", "completeness", "identityResolution")},
         "total": len(workset),

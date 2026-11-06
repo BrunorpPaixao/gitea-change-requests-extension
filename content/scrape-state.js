@@ -56,6 +56,7 @@ function createCollectionState(normalizedOptions, startedAt) {
       lastCommentByUserSkippedResolved: 0,
       lastCommentByUserSkippedOutdated: 0,
       skippedManuallyDeselected: 0,
+      skippedQuoteRepliesDefault: 0,
       skippedNoConversationData: 0,
       deduped: 0,
       runtimeMs: 0,
@@ -170,6 +171,8 @@ function recordSkippedConversation(state, selectionDecision, metadata) {
     state.stats.skippedLastCommentByUser += 1;
   } else if (selectionDecision?.skipped === "manual_exclude") {
     state.stats.skippedManuallyDeselected += 1;
+  } else if (selectionDecision?.skipped === "quote_reply_default") {
+    state.stats.skippedQuoteRepliesDefault += 1;
   }
 
   pushDiagnosticsDecision(state, {

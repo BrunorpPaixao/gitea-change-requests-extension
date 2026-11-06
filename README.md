@@ -30,12 +30,18 @@ The selected-node counter counts each copyable conversation or standalone commen
 | **Download Bundle (ZIP)** | Full JSON plus the PR diff. **Download Diff** is available separately. |
 | In-page **Copy** | JSON for one thread or standalone comment. |
 | In-page **Select** / **Deselect** | Highlight and store a manual selection. Manual inclusion still follows the active filters. The in-page preset buttons copy JSON in the chosen format. |
+| **Include reply** / **Exclude reply** | Opt a matched standalone reply into or out of export. Originals are on and quoted replies are off by default; explicit selections and active filters still apply. |
+| Quote **Include** / **Exclude** | Control duplicated quoted text independently of reply selection. Matched quote text is excluded by default; an included reply keeps its own text. |
 
 A complete full export, review queue, or bundle saves a comparison baseline containing IDs, filters, and hashes, without comment bodies. Use **Clear comparison history for this PR** to remove it. Changing filters requires a new complete export before **Copy changes** is available again.
+
+Quoted replies are linked to a unique earlier comment with the same complete rendered text, normalizing whitespace. A **Reply to #…** link and fading arrow show the source. Referenced originals are selected by default; matched standalone replies require **Include reply**. Originals carry `quotedReplies` references even when responses are excluded. Included replies export as `quote_reply` nodes with comment-level `replyTo` references and quote inclusion metadata. The relation is explicitly marked `exact_quote_text`: it records a text match, not confirmed reply intent. Unmatched, partial, ambiguous, or unsafe-to-remove quotes remain intact. Choices are saved per PR. Quote nodes do not increase conversation counts. A referenced original may be outside the current export if explicitly deselected or filtered out. Per-node **Copy** remains an explicit export of that node regardless of its selection state.
 
 ## Optional AI handoff
 
 Invoke **`$git-changes` explicitly** and provide the copied JSON or a JSON file path. The skill accepts review queues, full exports, and change payloads; it can prepare large files without repeating the whole payload in model context. Pasting JSON alone does not invoke the skill. Its editable source is [skills/git-changes/SKILL.md](skills/git-changes/SKILL.md), and [skill.zip](skill.zip) is the portable package.
+
+The skill understands `replyTo`, `quotedReplies`, and quote inclusion metadata. It distinguishes included evidence from references to excluded replies. Export and selection changes must keep this skill and its portable package aligned; see the [maintenance checklist](CONTRIBUTING.md#export-and-skill-compatibility).
 
 ## Output and limits
 
