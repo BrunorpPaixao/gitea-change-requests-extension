@@ -14,6 +14,7 @@ async function testSelection(options) {
   const { conversations, blocks, stats, diagnostics, completeness, normalizedOptions } = await collectConversations(options);
   lastDiagnostics = diagnostics;
   HighlightModule.applySelectionHighlights(blocks, blocks);
+  await refreshManualSelectionUi({ applyHighlights: false });
   if (Boolean(options?.debug)) {
     HighlightModule.renderDebugOverlay(blocks);
   }
@@ -30,6 +31,7 @@ async function testHighlights(options) {
   const { conversations, blocks, allBlocks, stats, diagnostics, completeness } = await collectConversations(options);
   lastDiagnostics = diagnostics;
   HighlightModule.applySelectionHighlights(allBlocks, blocks);
+  await refreshManualSelectionUi({ applyHighlights: false });
   if (Boolean(options?.debug)) {
     HighlightModule.renderDebugOverlay(blocks);
   }

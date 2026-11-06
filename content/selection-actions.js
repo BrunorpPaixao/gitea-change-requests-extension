@@ -61,7 +61,7 @@ async function refreshManualSelectionUi(options = {}) {
   const popupSettings = (await getPopupSettingsFromStorage()) || {};
   const ignoreComments = popupSettings.ignoreComments !== false;
   const blocks = collectActionableConversationNodes();
-  const eligibleBlocks = ignoreComments ? blocks.filter((block) => !isStandaloneTimelineComment(block)) : blocks;
+  const eligibleBlocks = [];
   const selectedBlocks = [];
 
   for (const block of blocks) {
@@ -76,8 +76,11 @@ async function refreshManualSelectionUi(options = {}) {
     if (!conversation) {
       continue;
     }
-    const selectionMode = getManualConversationSelection(block, conversation);
-    if (selectionMode === MANUAL_SELECTION_INCLUDE_VALUE) {
+    eligibleBlocks.push(block);
+    const selected = options.applyHighlights === true
+      ? getManualConversationSelection(block, conversation) === MANUAL_SELECTION_INCLUDE_VALUE
+      : isConversationSelectedForSummary(block, conversation);
+    if (selected) {
       selectedBlocks.push(block);
     }
   }
@@ -112,6 +115,9 @@ function refreshConversationSelectionButtonState(block) {
   const button = block.querySelector(`.${MANUAL_SELECTION_BUTTON_CLASS}`);
   if (button instanceof HTMLButtonElement) {
     updateManualSelectionButtonVisualState(button, selectionMode);
-    button.setAttribute("data-gpre-selection-mode", selectionMode || "none");
+    const nextMode = selectionMode || "none";
+    if (button.getAttribute("data-gpre-selection-mode") !== nextMode) {
+      button.setAttribute("data-gpre-selection-mode", nextMode);
+    }
   }
 }

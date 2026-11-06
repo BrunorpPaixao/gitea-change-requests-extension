@@ -27,10 +27,15 @@ function collectStandaloneCommentBlocks(conversationBlocks) {
       continue;
     }
     if (node.matches(".timeline-item-group[id^='issuecomment-']")) {
-      if (!node.querySelector(".timeline-item.comment .content.comment-container, .timeline-item.comment .raw-content, .timeline-item.comment .render-content")) {
+      const comments = Array.from(node.querySelectorAll(".timeline-item.comment")).filter(isStandaloneTimelineComment);
+      if (comments.length !== 1) {
         continue;
       }
       result.push(node);
+      continue;
+    }
+    const group = node.closest(".timeline-item-group[id^='issuecomment-']");
+    if (group && result.includes(group)) {
       continue;
     }
     if (!node.querySelector(".content.comment-container")) {

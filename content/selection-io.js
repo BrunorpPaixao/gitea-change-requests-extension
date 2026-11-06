@@ -70,6 +70,7 @@ async function copyTextToClipboard(text) {
 
   try {
     const area = document.createElement("textarea");
+    area.setAttribute("data-gpre-clipboard", "1");
     area.value = text;
     area.setAttribute("readonly", "");
     area.style.position = "fixed";

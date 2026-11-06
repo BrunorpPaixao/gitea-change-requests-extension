@@ -14,6 +14,7 @@ function applySelectionHighlights(allBlocks, selectedBlocks) {
   ensureHighlightStyles();
 
   const selectedSet = new Set(selectedBlocks || []);
+  SELECTION_HIGHLIGHT_BLOCKS = selectedSet;
   const selectedIndexByType = new Map();
 
   (allBlocks || []).forEach((block) => {
@@ -91,7 +92,7 @@ function applySelectionHighlights(allBlocks, selectedBlocks) {
     const nextForType = Number(selectedIndexByType.get(typeKey) || 0) + 1;
     selectedIndexByType.set(typeKey, nextForType);
     badge.textContent = String(nextForType);
-    const badgeHost = isStandaloneComment ? block : highlightTarget;
+    const badgeHost = isStandaloneComment ? block.querySelector(".content.comment-container") || highlightTarget : highlightTarget;
     badgeHost.prepend(badge);
   });
 }
@@ -238,6 +239,7 @@ function buildDebugNodeLabel(node, block, isStandaloneComment, role) {
 }
 
 function clearSelectionHighlights() {
+  SELECTION_HIGHLIGHT_BLOCKS = null;
   clearHighlightDebugOverlay();
   for (const badge of document.querySelectorAll("[data-gpre-highlight-badge='1']")) {
     badge.remove();
@@ -341,6 +343,7 @@ function ensureHighlightStyles() {
         box-shadow: none !important;
       }
       .timeline-item.comment .content.comment-container.gpre-highlight-comment {
+        position: relative !important;
         background: transparent !important;
         border: 4px solid #ec4899 !important;
         border-radius: 0 !important;
