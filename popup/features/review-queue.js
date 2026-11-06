@@ -15,6 +15,8 @@ function buildReviewQueue(payload) {
     actors: payload?.actors || null,
     identityResolution: payload?.identityResolution || null,
     filters: comparisonFilters(payload),
+    selectionPolicyVersion: payload.exportOptions?.selectionPolicyVersion || "legacy",
+    selectionOverridesHash: payload.exportOptions?.selectionOverridesHash || "legacy",
     completeness: payload?.completeness || null,
     exportFingerprint: payload?.exportFingerprint || null,
     conversations: (payload?.conversations || []).map((item) => ({

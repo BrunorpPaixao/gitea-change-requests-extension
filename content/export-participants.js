@@ -67,6 +67,9 @@ function dedupeUserNamesForExport(names) {
  */
 function buildExportOptions(normalizedOptions) {
   return {
+    selectionPolicyVersion: GPRESelectionEngine.policyVersion,
+    selectionOverridesHash: hashFNV1aHex(stableStringify(Array.from(MANUAL_SELECTION_STATE_BY_CONVERSATION_KEY.entries()).sort(([a], [b]) => a.localeCompare(b)))),
+    exporterVersion: globalThis.chrome?.runtime?.getManifest?.().version || null,
     gitUserName: normalizedOptions?.userName || null,
     ignoreLastCommentByUser: Boolean(normalizedOptions?.ignoreWhereLastCommentIsFromUser),
     ignoreResolved: normalizedOptions?.ignoreResolvedChanges !== false,
