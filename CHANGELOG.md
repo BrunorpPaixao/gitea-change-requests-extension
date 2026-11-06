@@ -6,6 +6,9 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 
 ## [Unreleased]
 
+### Fixed
+- Removed an unnecessary unload listener that triggered a permissions-policy violation when initializing conversation copy and selection controls.
+
 ## [1.1.1] - 2026-10-29
 ### Changed
 - Release packaging now keeps both an unversioned extension ZIP and a versioned ZIP for the same build.
