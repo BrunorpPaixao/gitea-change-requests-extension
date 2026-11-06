@@ -18,6 +18,7 @@
     "content/selection-summary-ui.js",
     "content/selection-summary.js",
     "content/selection-visuals.js",
+    "content/page-processing.js",
     "content/quote-replies.js",
     "content/quote-reply-ui.js",
     "content/selection-engine.js",

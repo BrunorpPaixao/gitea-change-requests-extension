@@ -58,6 +58,8 @@ The skill understands `replyTo`, `quotedReplies`, and quote inclusion metadata. 
 - **Unexpected selection:** check the four filters, Git user name, and **Preview selection** counts.
 - **Incomplete export:** reload the PR and wait for conversations to load. Enable **Debug** for **Copy Diagnostics** or **Download Diagnostics**; **Verbose diagnostics** adds per-thread decisions.
 
+Unchanged comment facts and quote text are cached in memory. Relevant edits and source insertion/removal invalidate affected facts before export; unrelated sidebar updates and copy feedback do not rebuild quote matching.
+
 ## Development
 
 Runtime code is plain JavaScript in `popup/`, `content/`, and `shared/`; the popup injects content scripts only into the active PR tab. The extension uses `activeTab`, `tabs`, and `scripting` for page access, `storage` for settings and comparison state, and `clipboardWrite`/`downloads` for exports.

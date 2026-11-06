@@ -42,6 +42,7 @@ const jsFiles = [
   "content/selection-preview.js",
   "popup/features/selection-preview.js",
   "content/selection-actions-bootstrap.js",
+  "content/page-processing.js",
   "content/quote-replies.js",
   "content/quote-reply-ui.js",
   "content/manual-selection-export.js",

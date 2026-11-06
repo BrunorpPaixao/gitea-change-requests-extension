@@ -13,6 +13,7 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 - Add per-quote Include/Exclude controls: duplicated quote text is excluded by default while the reply's own text is retained. Choices persist per PR across copy/export formats.
 
 ### Changed
+- Cache unchanged comment and quote facts, flush relevant queued mutations before exporting, and ignore unrelated page/extension UI updates.
 - Version comparison baselines by export schema, selection policy and explicit-choice fingerprint; require a new complete baseline when compatibility changes.
 - Unify filtered selection decisions across controls, counters, highlights, preview, and bulk exports with revisioned snapshots.
 - Update the git-changes skill and portable preparer for quote reply metadata, original-first selection defaults, and relationship-aware summaries; require skill maintenance alongside future export changes.

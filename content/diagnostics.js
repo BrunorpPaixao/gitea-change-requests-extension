@@ -17,6 +17,7 @@
  */
 function buildDiagnosticsPayload({ mode, normalizedOptions, stats, decisions, warning, startedAt }) {
   return {
+    processing: { ...PAGE_PROCESSING_METRICS },
     mode: mode || "collect",
     generatedAt: new Date().toISOString(),
     startedAt: new Date(startedAt || Date.now()).toISOString(),

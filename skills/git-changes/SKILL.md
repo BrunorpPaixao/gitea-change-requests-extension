@@ -85,7 +85,7 @@ For the exact accepted short keys, read [references/short-key-map.json](referenc
 
 ## Factual Interpretation Rules
 
-- Exporter fields are factual context, not decisions.
+- Exporter fields are factual context, not decisions. Diagnostic processing counters describe cache/index work, not review completeness or semantic confidence. The exporter flushes queued relevant page changes before constructing the current selection/export snapshot.
 - Use `actors`, `identityResolution`, and `participants` only as identity context.
 - Use `views` and `counts` for deterministic workset selection and batching.
 - Use `lastComment...` fields for latest-thread-state context.

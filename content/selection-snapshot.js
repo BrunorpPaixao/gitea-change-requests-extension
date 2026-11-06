@@ -1,10 +1,11 @@
 /** DOM edge for shared, revisioned selection decisions. Facts are cached separately. */
 function captureSelectionSnapshot(options = SELECTION_OPTIONS || {}) {
+  flushPendingSelectionMutations();
   const normalized = normalizeCollectionOptions(options);
   if (!globalThis.document?.body) return { entries: [], byBlock: new Map(), options: normalized, revision: SELECTION_REVISION };
   const entries = collectActionableConversationNodes().map((block, index) => {
     const standalone = isStandaloneTimelineComment(block);
-    const conversation = standalone ? extractStandaloneCommentConversation(block, index) : extractConversation(block);
+    const conversation = cachedConversationFacts(block, standalone, index);
     const decision = conversation ? evaluateConversationSelection(block, conversation, {
       ...normalized, manualSelection: getManualConversationSelection(block, conversation),
     }) : { selected: false, skipped: "no_data", preference: "exclude", reason: null };
@@ -31,7 +32,12 @@ function captureSelectionSnapshot(options = SELECTION_OPTIONS || {}) {
 }
 
 async function getSelectionSnapshot(options) {
+  if (!globalThis.document?.body) return captureSelectionSnapshot();
+  if (MANUAL_SELECTION_PR_STORAGE_KEY && MANUAL_SELECTION_PR_STORAGE_KEY !== buildCurrentPrSelectionStorageKey()) MANUAL_SELECTION_STATE_HYDRATION_PROMISE = null;
   await ensureManualSelectionStateLoaded();
+  if (!globalThis.document?.body) return captureSelectionSnapshot();
+  refreshQuoteReplyIndex();
+  refreshQuoteReplyUi();
   const settings = options || (await getPopupSettingsFromStorage()) || {};
   SELECTION_OPTIONS = normalizeCollectionOptions(settings);
   return captureSelectionSnapshot(SELECTION_OPTIONS);

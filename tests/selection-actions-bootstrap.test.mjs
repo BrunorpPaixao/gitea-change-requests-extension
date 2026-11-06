@@ -30,6 +30,7 @@ test("selection bootstrap observes conversations without forbidden unload listen
     isLikelyGiteaPrPage: () => true,
     initializeSelectionTracking() {},
     ensureConversationActionButtonStyles() {},
+    markSelectionContentChanges: () => true,
     captureSelectionSnapshot: () => ({ entries: [], byBlock: new Map() }),
     refreshQuoteReplyIndex() {},
     refreshQuoteReplyUi() {},

@@ -1,12 +1,19 @@
 /** Exact quote relationships and export shaping. Never guesses between matching sources. */
 function quoteComparableText(element) {
+  const root = element.closest(".timeline-item.comment, .comment.code-comment, .comment[data-comment-id]") || element;
+  const revision = PAGE_NODE_REVISIONS.get(root) || 0;
+  const cached = QUOTE_TEXT_CACHE.get(element);
+  if (cached?.revision === revision) return cached.text;
+  PAGE_PROCESSING_METRICS.normalizedTextReads += 1;
   const clone = element.cloneNode(true);
   for (const control of clone.querySelectorAll("[data-gpre-quote-ui]")) control.remove();
   for (const block of clone.querySelectorAll("p, li, pre, div, br, blockquote")) {
     block.before(" ");
     block.after(" ");
   }
-  return normalizeWhitespace((clone.textContent || "").normalize("NFC"));
+  const text = normalizeWhitespace((clone.textContent || "").normalize("NFC"));
+  QUOTE_TEXT_CACHE.set(element, { revision, text });
+  return text;
 }
 
 /** Locate top-level Markdown quote spans without treating fenced code as quotes. */
@@ -40,7 +47,13 @@ function quoteMarkdownSpans(raw) {
 }
 
 /** Build a page-order index once per genuine page refresh, before extracting comments. */
-function refreshQuoteReplyIndex() {
+function refreshQuoteReplyIndex({ force = false } = {}) {
+  flushPendingSelectionMutations();
+  const pageUrl = window.location.origin + window.location.pathname;
+  if (force || QUOTE_INDEX_PAGE_URL !== pageUrl) resetPageFactCaches();
+  if (!QUOTE_INDEX_DIRTY) return;
+  QUOTE_INDEX_PAGE_URL = pageUrl;
+  PAGE_PROCESSING_METRICS.quoteIndexBuilds += 1;
   const byText = new Map();
   const entries = [];
   const records = [];
@@ -55,7 +68,13 @@ function refreshQuoteReplyIndex() {
     const rawElement = root.querySelector(".raw-content");
     const raw = rawElement ? rawElement.textContent || "" : null;
     const quotes = Array.from(rendered.querySelectorAll("blockquote")).filter((quote) => !quote.parentElement.closest("blockquote"));
-    const spans = raw === null ? [] : quoteMarkdownSpans(raw);
+    let spans = [];
+    if (raw !== null) {
+      const revision = PAGE_NODE_REVISIONS.get(root) || 0;
+      const cached = QUOTE_MARKDOWN_CACHE.get(rawElement);
+      spans = cached?.revision === revision ? cached.spans : quoteMarkdownSpans(raw);
+      QUOTE_MARKDOWN_CACHE.set(rawElement, { revision, spans });
+    }
     const entry = { root, rendered, id, url: new URL(`#${anchorId}`, window.location.href).href, quotes: [], rawElement };
     for (let index = 0; index < quotes.length; index += 1) {
       const quote = quotes[index];
@@ -92,6 +111,7 @@ function refreshQuoteReplyIndex() {
   QUOTE_REPLY_ENTRIES = entries;
   QUOTE_REPLY_RECORDS = records;
   QUOTE_REPLY_DIAGNOSTICS = diagnostics;
+  QUOTE_INDEX_DIRTY = false;
 }
 
 function isQuoteTextIncluded(record) {
