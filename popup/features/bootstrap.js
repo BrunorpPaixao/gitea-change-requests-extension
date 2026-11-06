@@ -7,6 +7,7 @@
  * Boots the popup runtime and restores persisted settings before querying the active tab.
  */
 async function bootstrap() {
+  document.getElementById("appVersion").textContent = `v${chrome.runtime.getManifest().version}`;
   initTheme();
   ensureLastCommentFilterAtBottom();
   initializeActionTabs();

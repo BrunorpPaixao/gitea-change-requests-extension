@@ -44,6 +44,7 @@ Invoke **`$git-changes` explicitly** and provide the copied JSON or a JSON file 
 
 ## Troubleshooting
 
+- The popup shows the installed extension version beside its subtitle.
 - **No PR detected:** open the PR itself, not a repository list or diff URL, then reopen the popup.
 - **Unexpected selection:** check the four filters, Git user name, and **Preview selection** counts.
 - **Incomplete export:** reload the PR and wait for conversations to load. Enable **Debug** for **Copy Diagnostics** or **Download Diagnostics**; **Verbose diagnostics** adds per-thread decisions.
