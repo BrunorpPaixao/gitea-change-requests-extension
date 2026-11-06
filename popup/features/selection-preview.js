@@ -52,6 +52,8 @@ function renderSelectionPreview(preview, tabId) {
   const warning = document.getElementById("selectionPreviewWarnings");
   warning.textContent = preview.missingOriginalCount
     ? `${preview.missingOriginalCount} missing original reference(s): ${preview.warnings.map((item) => `#${item.commentId} (${item.status.replaceAll("_", " ")}: ${item.reason.replaceAll("_", " ")})`).join(", ")}` : "";
+  const quoteIssues = Object.entries(preview.quoteDiagnostics || {}).filter(([status]) => status !== "matched").map(([status, count]) => `${status.replaceAll("_", " ")}: ${count}`);
+  if (quoteIssues.length) warning.textContent += `${warning.textContent ? " · " : ""}Preserved quotes — ${quoteIssues.join(", ")}`;
   const pager = document.getElementById("selectionPreviewPager");
   pager.replaceChildren();
   for (const [label, offset] of [["Previous", Math.max(0, preview.offset - 25)], ["Next", preview.nextOffset]]) {

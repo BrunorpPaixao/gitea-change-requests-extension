@@ -27,6 +27,7 @@ function buildSelectionPreview(snapshot, offset = 0, limit = 25) {
     revision: snapshot.revision, policyVersion: snapshot.policyVersion, total: entries.length,
     included: entries.filter((entry) => entry.decision.selected).length,
     excludedReplies: entries.filter((entry) => entry.decision.skipped === "quote_reply_default").length,
+    quoteDiagnostics: QUOTE_REPLY_DIAGNOSTICS.reduce((counts, item) => { counts[item.status] = (counts[item.status] || 0) + 1; return counts; }, {}),
     omittedQuotes, missingOriginalCount: warnings.length, warnings: warnings.slice(0, 25),
     offset: start, nextOffset: start + size < entries.length ? start + size : null,
     items: entries.slice(start, start + size).map((entry) => ({

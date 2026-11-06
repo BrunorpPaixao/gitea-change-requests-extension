@@ -44,6 +44,7 @@ function refreshQuoteReplyIndex() {
   const byText = new Map();
   const entries = [];
   const records = [];
+  const diagnostics = [];
   for (const rendered of document.querySelectorAll(".render-content")) {
     const root = rendered.closest(".timeline-item.comment, .comment.code-comment, .comment[data-comment-id]");
     if (!root || root.matches(".form, .pull-merge-box") || root.querySelector(".render-content") !== rendered) continue;
@@ -58,14 +59,22 @@ function refreshQuoteReplyIndex() {
     const entry = { root, rendered, id, url: new URL(`#${anchorId}`, window.location.href).href, quotes: [], rawElement };
     for (let index = 0; index < quotes.length; index += 1) {
       const quote = quotes[index];
-      const matches = byText.get(quoteComparableText(quote)) || [];
-      if (matches.length !== 1) continue;
+      const comparable = quoteComparableText(quote);
+      const matches = byText.get(comparable) || [];
+      const diagnostic = { quote, entry, status: "matched" };
+      diagnostics.push(diagnostic);
+      if (matches.length !== 1) {
+        diagnostic.status = matches.length > 1 ? "ambiguous" : "no_earlier_source";
+        if (!matches.length && comparable.length >= 24 && byText.size <= 200 &&
+            Array.from(byText.keys()).some((text) => text.length >= 24 && (text.includes(comparable) || comparable.includes(text)))) diagnostic.status = "partial_only";
+        continue;
+      }
       const original = matches[0];
       const span = spans.length === quotes.length ? spans[index] : null;
       // Only omit raw text when the entire Markdown span also matches the source.
       const canExclude = raw === null || Boolean(span && original.raw !== null &&
         normalizeWhitespace(span.markdown) === normalizeWhitespace(original.raw));
-      if (!canExclude) continue;
+      if (!canExclude) { diagnostic.status = "unsupported_markdown"; continue; }
       const replyTo = { commentId: original.id, url: original.url, match: "exact_quote_text" };
       const key = `quote:${id}:${index}:${hashFNV1aHex(quoteComparableText(quote))}`;
       const record = { quote, original: original.root, entry, span, key, replyTo, index };
@@ -82,6 +91,7 @@ function refreshQuoteReplyIndex() {
   }
   QUOTE_REPLY_ENTRIES = entries;
   QUOTE_REPLY_RECORDS = records;
+  QUOTE_REPLY_DIAGNOSTICS = diagnostics;
 }
 
 function isQuoteTextIncluded(record) {

@@ -7,6 +7,7 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 ## [Unreleased]
 
 ### Added
+- Explain preserved unmatched, ambiguous, partial, and unsupported quotes on the page and in preview diagnostics without guessing relationships.
 - Add paged export details with inclusion reasons, omitted quote counts, missing-source warnings, page navigation, saved-preference controls, and stale-preview detection.
 - Identify uniquely matched quoted replies with source links, fading connection arrows, and `quote_reply` / `quote` node metadata including text-match-based `replyTo` references.
 - Add per-quote Include/Exclude controls: duplicated quote text is excluded by default while the reply's own text is retained. Choices persist per PR across copy/export formats.

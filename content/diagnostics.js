@@ -35,6 +35,7 @@ function buildDiagnosticsPayload({ mode, normalizedOptions, stats, decisions, wa
       skippedNoConversationData: Number(stats?.skippedNoConversationData || 0),
       deduped: Number(stats?.deduped || 0),
     },
+    quoteMatches: QUOTE_REPLY_DIAGNOSTICS.reduce((counts, item) => { counts[item.status] = (counts[item.status] || 0) + 1; return counts; }, {}),
     decisions: Array.isArray(decisions) ? decisions : [],
   };
 }
