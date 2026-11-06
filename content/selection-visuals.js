@@ -11,11 +11,15 @@
  */
 function updateManualSelectionButtonVisualState(button, selectionMode) {
   const isSelected = selectionMode === MANUAL_SELECTION_INCLUDE_VALUE;
-  button.classList.toggle("is-selected", isSelected);
-  button.classList.toggle("basic", !isSelected);
-  button.classList.toggle("positive", isSelected);
-  button.classList.toggle("negative", false);
-  button.setAttribute("aria-pressed", isSelected ? "true" : "false");
+  for (const [className, enabled] of [["is-selected", isSelected], ["basic", !isSelected], ["positive", isSelected], ["negative", false]]) {
+    if (button.classList.contains(className) !== enabled) {
+      button.classList.toggle(className, enabled);
+    }
+  }
+  const pressed = isSelected ? "true" : "false";
+  if (button.getAttribute("aria-pressed") !== pressed) {
+    button.setAttribute("aria-pressed", pressed);
+  }
   const label = button.closest(".timeline-item.comment") ? "comment" : "conversation";
   const nextTitle = isSelected
     ? `Manual selection active. Click to deselect this ${label}.`
@@ -110,6 +114,15 @@ function ensureConversationActionButtonStyles() {
   const style = document.createElement("style");
   style.id = "gpre-single-copy-style";
   style.textContent = `
+      .gpre-conversation-actions {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        padding: 8px 10px 10px !important;
+      }
+      .gpre-conversation-actions > button {
+        margin: 0 !important;
+      }
       .${SINGLE_COPY_BUTTON_CLASS},
       .${MANUAL_SELECTION_BUTTON_CLASS} {
         display: inline-flex !important;

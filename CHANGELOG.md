@@ -6,6 +6,12 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 
 ## [Unreleased]
 
+### Fixed
+- Prevent copy-feedback changes from triggering page-wide refreshes, batch page mutations, and avoid redundant control attribute writes that can feed host-script refresh loops.
+- Add padding around bottom in-page Copy and Select/Deselect controls.
+- Count grouped review comments once and keep selected-node counts aligned with preview highlights; exclude uncopyable markup from totals.
+- Anchor standalone-comment number badges to the comment border instead of the surrounding review event.
+
 ## [1.1.2] - 2026-11-06
 
 ### Added

@@ -10,6 +10,7 @@ test("selection bootstrap observes conversations without forbidden unload listen
   let observedTarget;
   let observedOptions;
   let refreshCount = 0;
+  let scheduledRefresh;
   const context = vm.createContext({
     window: {
       location: {},
@@ -19,6 +20,13 @@ test("selection bootstrap observes conversations without forbidden unload listen
       },
     },
     document: { body: {}, querySelectorAll: () => [] },
+    Element: class {},
+    SINGLE_COPY_BUTTON_CLASS: "gpre-copy-single-btn",
+    MANUAL_SELECTION_BUTTON_CLASS: "gpre-manual-selection-btn",
+    MANUAL_SELECTION_SUMMARY_WRAPPER_ID: "gpre-manual-selection-summary-wrapper",
+    MANUAL_SELECTION_DEBUG_OVERLAY_ID: "gpre-debug-overlay",
+    MANUAL_SELECTION_MUTATION_REFRESH_TIMER: null,
+    setTimeout(callback) { scheduledRefresh = callback; return 1; },
     isLikelyGiteaPrPage: () => true,
     ensureConversationActionButtonStyles() {},
     ensureManualSelectionStateLoaded: () => Promise.resolve(),
@@ -46,5 +54,10 @@ test("selection bootstrap observes conversations without forbidden unload listen
   assert.equal(observedOptions.subtree, true);
   assert.equal(refreshCount, 1);
   observerCallback([]);
+  assert.equal(refreshCount, 1, "empty observer batches do no work");
+  observerCallback([{ target: null }]);
+  observerCallback([{ target: null }]);
+  assert.equal(refreshCount, 1, "page changes are batched outside observer microtasks");
+  scheduledRefresh();
   assert.equal(refreshCount, 2, "DOM changes still trigger selection refreshes");
 });

@@ -25,15 +25,36 @@ function initializeSingleConversationCopyButtons() {
     if (MANUAL_SELECTION_SUPPRESS_NEXT_MUTATION_REFRESH) {
       return;
     }
-    if (Array.isArray(mutations) && mutations.length && mutations.every(isDebugOverlayMutation)) {
+    if (!mutations.length || mutations.every(isConversationActionUiMutation)) {
       return;
     }
-    injectSingleCopyButtons();
-    queueManualSelectionUiRefresh({ applyHighlights: false });
+    if (MANUAL_SELECTION_MUTATION_REFRESH_TIMER !== null) {
+      return;
+    }
+    // Yield to page input and coalesce bursts instead of rescanning in observer microtasks.
+    MANUAL_SELECTION_MUTATION_REFRESH_TIMER = setTimeout(() => {
+      MANUAL_SELECTION_MUTATION_REFRESH_TIMER = null;
+      injectSingleCopyButtons();
+      queueManualSelectionUiRefresh({ applyHighlights: false });
+    }, 50);
   });
   MANUAL_SELECTION_MUTATION_OBSERVER.observe(document.body, { childList: true, subtree: true });
   // Keep observing for the document's lifetime, including back/forward cache restores.
   // The browser releases the observer with the document; no unload handler is needed.
+}
+
+/** Ignores changes confined to extension controls, feedback, badges, and overlays. */
+function isConversationActionUiMutation(mutation) {
+  const selector = `.${SINGLE_COPY_BUTTON_CLASS}, .${MANUAL_SELECTION_BUTTON_CLASS}, .gpre-conversation-actions,
+    #${MANUAL_SELECTION_SUMMARY_WRAPPER_ID}, #${MANUAL_SELECTION_DEBUG_OVERLAY_ID},
+    [data-gpre-highlight-badge], [data-gpre-clipboard]`;
+  const isOwned = (node) => node instanceof Element && Boolean(node.closest(selector));
+  const target = mutation.target instanceof Element ? mutation.target : mutation.target?.parentElement;
+  if (isOwned(target)) {
+    return true;
+  }
+  const changedNodes = [...(mutation.addedNodes || []), ...(mutation.removedNodes || [])];
+  return changedNodes.length > 0 && changedNodes.every(isOwned);
 }
 
 /**
@@ -217,19 +238,11 @@ function insertConversationActionButton(target, block, button, positionIndex, an
     return;
   }
 
-  if (anchorButton instanceof HTMLButtonElement && anchorButton.parentElement === target) {
-    anchorButton.after(button);
-    return;
+  let actions = target.querySelector(":scope > .gpre-conversation-actions");
+  if (!actions) {
+    actions = document.createElement("div");
+    actions.className = "gpre-conversation-actions";
+    target.appendChild(actions);
   }
-
-  if (target === block) {
-    if (positionIndex === 0) {
-      block.prepend(button);
-    } else {
-      block.appendChild(button);
-    }
-    return;
-  }
-
-  target.appendChild(button);
+  actions.appendChild(button);
 }

@@ -65,6 +65,7 @@ async function getManualSelectionSummary() {
   const blocks = collectActionableConversationNodes();
   const eligibleBlocks = ignoreComments ? blocks.filter((block) => !isStandaloneTimelineComment(block)) : blocks;
   let selectedCount = 0;
+  let totalCount = 0;
 
   for (const block of eligibleBlocks) {
     if (!(block instanceof Element)) {
@@ -74,16 +75,24 @@ async function getManualSelectionSummary() {
     if (!conversation) {
       continue;
     }
-    if (getManualConversationSelection(block, conversation) === MANUAL_SELECTION_INCLUDE_VALUE) {
+    totalCount += 1;
+    if (isConversationSelectedForSummary(block, conversation)) {
       selectedCount += 1;
     }
   }
 
   return {
     selectedCount,
-    totalCount: eligibleBlocks.length,
-    visibleCount: eligibleBlocks.length,
+    totalCount,
+    visibleCount: totalCount,
   };
+}
+
+/** Uses the active highlight selection, falling back to manual state before a preview. */
+function isConversationSelectedForSummary(block, conversation) {
+  return SELECTION_HIGHLIGHT_BLOCKS !== null
+    ? SELECTION_HIGHLIGHT_BLOCKS.has(block)
+    : getManualConversationSelection(block, conversation) === MANUAL_SELECTION_INCLUDE_VALUE;
 }
 
 /**
