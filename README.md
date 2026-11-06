@@ -41,6 +41,8 @@ Quoted replies are linked to a unique earlier comment with the same complete ren
 
 Invoke **`$git-changes` explicitly** and provide the copied JSON or a JSON file path. The skill accepts review queues, full exports, and change payloads; it can prepare large files without repeating the whole payload in model context. Pasting JSON alone does not invoke the skill. Its editable source is [skills/git-changes/SKILL.md](skills/git-changes/SKILL.md), and [skill.zip](skill.zip) is the portable package.
 
+The skill understands `replyTo`, `quotedReplies`, and quote inclusion metadata. It distinguishes included evidence from references to excluded replies. Export and selection changes must keep this skill and its portable package aligned; see the [maintenance checklist](CONTRIBUTING.md#export-and-skill-compatibility).
+
 ## Output and limits
 
 - Full PR and single-conversation exports use the factual `2.1-factual` contract. Short keys change field names only, never values or selection behavior.

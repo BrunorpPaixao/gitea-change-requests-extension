@@ -107,3 +107,71 @@ test("invalid exporter JSON fails without falling back to prose", () => {
   assert.equal(missingFile.status, 2);
   assert.match(missingFile.stderr, /Invalid git-changes input:/);
 });
+
+function quoteReplyFixture() {
+  const payload = structuredClone(fixture);
+  const reference = (commentId) => ({ commentId, url: `${payload.source.url}#issuecomment-${commentId}`, match: "exact_quote_text" });
+  const original = {
+    ...payload.conversations[0], conversationId: "original",
+    rootComment: { ...payload.conversations[0].rootComment, id: "original", quotedReplies: [reference("response")] },
+    comments: [],
+  };
+  const reply = {
+    ...payload.conversations[0], conversationId: "response", nodeType: "quote_reply",
+    rootComment: { id: "response", author: "author", datetime: null, text: "", nodeType: "quote_reply", replyTo: [reference("original")], quotes: [{ nodeType: "quote", included: false, replyTo: reference("original") }] },
+    comments: [{ id: "followup", author: "author", datetime: null, text: "Updated the retry limit.", nodeType: "quote_reply", replyTo: [reference("original")], quotes: [{ nodeType: "quote", included: true, replyTo: reference("original") }] }],
+  };
+  payload.conversations = [original, reply];
+  return payload;
+}
+
+test("reply references and quote states survive all skill input profiles and paged item loading", () => {
+  const full = quoteReplyFixture();
+  const profiles = [
+    full,
+    serializer.transformForExport(full, { shortKeys: true }),
+    profileContext.GPREReviewQueue.buildReviewQueue(full),
+    { format: "gpre.review_delta.v1", schemaVersion: full.schemaVersion, source: full.source, filters: {}, completeness: full.completeness, newConversations: [full.conversations[0]], changedConversations: [full.conversations[1]], missingFromCurrentView: [] },
+  ];
+  for (const profile of profiles) {
+    const summary = prepareInput(profile);
+    assert.equal(summary.status, 0, summary.stderr);
+    assert.equal(summary.json.items[0].quotedReplyCount, 1);
+    assert.equal(summary.json.items[1].replyToCount, 2);
+    assert.equal(summary.json.items[1].excludedQuoteCount, 1);
+    const page = prepareInput(profile, ["--offset", "1", "--limit", "1"]);
+    assert.equal(page.json.items[0].replyToCount, 2);
+    for (const index of [0, 1]) {
+      const item = prepareInput(profile, ["--item", String(index)]);
+      assert.equal(item.status, 0, item.stderr);
+      assert.deepEqual(item.json.conversation.rootComment, full.conversations[index].rootComment);
+      assert.deepEqual(item.json.conversation.comments, full.conversations[index].comments);
+    }
+  }
+  // References to omitted responses/sources are factual context, not malformed input.
+  for (const selected of [full.conversations.slice(0, 1), full.conversations.slice(1)]) {
+    const result = prepareInput({ ...full, conversations: selected });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.json.total, 1);
+  }
+});
+
+test("malformed quote metadata fails validation without guessing relationships", () => {
+  const variants = [
+    { replyTo: "original" },
+    { replyTo: [] },
+    { replyTo: [{ commentId: "original", url: "link", match: "guessed" }] },
+    { quotedReplies: [{ commentId: null, url: "link", match: "exact_quote_text" }] },
+    { quotedReplies: [{ commentId: "response", match: "exact_quote_text" }] },
+    { quotes: [{ nodeType: "quote", included: "false", replyTo: {} }] },
+    { quotes: [{ nodeType: "quote", included: false, replyTo: null }] },
+  ];
+  for (const metadata of variants) {
+    const payload = quoteReplyFixture();
+    Object.assign(payload.conversations[1].rootComment, metadata);
+    const result = prepareInput(payload);
+    assert.equal(result.status, 2);
+    assert.equal(result.stdout, "");
+    assert.match(result.stderr, /Invalid git-changes input:/);
+  }
+});
