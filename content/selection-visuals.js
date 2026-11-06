@@ -10,7 +10,7 @@
  * @param {string | null} selectionMode Current manual selection mode.
  * @param {boolean} isQuoteReply Whether this is a standalone quoted reply.
  */
-function updateManualSelectionButtonVisualState(button, selectionMode, isQuoteReply = false, explanation = null) {
+function updateManualSelectionButtonVisualState(button, selectionMode, isQuoteReply = false, explanation = null, preferenceMode = null) {
   const isSelected = selectionMode === MANUAL_SELECTION_INCLUDE_VALUE;
   for (const [className, enabled] of [["is-selected", isSelected], ["basic", !isSelected], ["positive", isSelected], ["negative", false]]) {
     if (button.classList.contains(className) !== enabled) {
@@ -28,7 +28,7 @@ function updateManualSelectionButtonVisualState(button, selectionMode, isQuoteRe
   if (button.getAttribute("title") !== nextTitle) {
     button.setAttribute("title", nextTitle);
   }
-  const nextText = isQuoteReply ? isSelected ? "exclude reply" : "include reply" : isSelected ? "deselect" : "select";
+  const nextText = !isSelected && preferenceMode === "include" ? "exclude explicitly" : isQuoteReply ? isSelected ? "exclude reply" : "include reply" : isSelected ? "deselect" : "select";
   if (button.textContent !== nextText) {
     button.textContent = nextText;
   }

@@ -36,3 +36,13 @@ test("snapshots align counters and exports and invalidate on settings, choices a
     assert.equal(payload.conversations.length, updated.entries.filter(e => e.decision.selected).length);
   } finally { h.dispose(); }
 });
+
+test("navigation to another PR invalidates an otherwise identical snapshot", async () => {
+  const h = createContentHarness({ html: standaloneCommentHtml, url: "https://git.example.com/acme/repo/pulls/42", storageLocal: { [popupSettingsStorageKey]: { ignoreComments: false } } });
+  try {
+    await h.window.GPREManualSelectionUiRefreshPromise;
+    const before = await h.window.getSelectionSnapshot();
+    h.window.history.pushState({}, "", "/acme/repo/pulls/43");
+    assert.ok((await h.window.getSelectionSnapshot()).revision > before.revision);
+  } finally { h.dispose(); }
+});

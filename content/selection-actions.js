@@ -92,8 +92,8 @@ function refreshConversationSelectionButtonState(block, entry = captureSelection
   const button = block.querySelector(`.${MANUAL_SELECTION_BUTTON_CLASS}`);
   if (button instanceof HTMLButtonElement) {
     const isQuoteReply = isStandaloneTimelineComment(block) && conversation.rootComment?.nodeType === "quote_reply";
-    const explanation = entry.decision.skipped ? `Excluded: ${entry.decision.skipped.replaceAll("_", " ")}. Saved preference: ${entry.decision.preference}.` : `Included: ${entry.decision.reason.replaceAll("_", " ")}.`;
-    updateManualSelectionButtonVisualState(button, selectionMode, isQuoteReply, explanation);
+    const explanation = entry.decision.skipped ? `Excluded: ${entry.decision.skipped.replaceAll("_", " ")}. ${entry.decision.manualMode ? "Saved choice" : "Default"}: ${entry.decision.preference}.` : `Included: ${entry.decision.reason.replaceAll("_", " ")}.`;
+    updateManualSelectionButtonVisualState(button, selectionMode, isQuoteReply, explanation, entry.decision.preference);
     const nextMode = selectionMode || "none";
     if (button.getAttribute("data-gpre-selection-mode") !== nextMode) {
       button.setAttribute("data-gpre-selection-mode", nextMode);

@@ -138,7 +138,7 @@ test("failed manual selection restores the selection button and leaves it unsele
     assert.equal(button.getAttribute("aria-pressed"), "false");
 
     await new Promise((resolve) => setTimeout(resolve, 1620));
-    assert.equal(button.textContent, "select");
+    assert.equal(button.textContent, "exclude explicitly");
     assert.equal(button.querySelector(".gpre-copy-single-icon"), null);
   } finally {
     harness.dispose();

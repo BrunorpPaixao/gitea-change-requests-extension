@@ -42,7 +42,7 @@ function cachedConversationFacts(block, standalone, index) {
   const lastComment = conversation?.comments?.length ? conversation.comments[conversation.comments.length - 1] : conversation?.rootComment;
   const facts = { resolution: getConversationResolution(block), outdated: Boolean(conversation?.outdated ?? isOutdatedConversation(block)),
     lastAuthor: normalizeUserName(getLastCommentAuthorFromBlock(block) || lastComment?.author || "") };
-  CONVERSATION_FACT_CACHE.set(block, { signature, conversation, facts });
+  CONVERSATION_FACT_CACHE.set(block, { signature, conversation, facts, factRevision: PAGE_PROCESSING_METRICS.conversationExtractions });
   return conversation;
 }
 
