@@ -66,7 +66,8 @@ function injectSingleCopyButtons() {
   }
   refreshQuoteReplyIndex();
   refreshQuoteReplyUi();
-  const blocks = collectActionableConversationNodes();
+  const snapshot = captureSelectionSnapshot();
+  const blocks = snapshot.entries.map((entry) => entry.block);
   for (const block of blocks) {
     if (!(block instanceof Element)) {
       continue;
@@ -75,7 +76,7 @@ function injectSingleCopyButtons() {
     const copyButton = block.querySelector(`.${SINGLE_COPY_BUTTON_CLASS}`);
     const selectionButton = block.querySelector(`.${MANUAL_SELECTION_BUTTON_CLASS}`);
     if (copyButton instanceof HTMLButtonElement && selectionButton instanceof HTMLButtonElement) {
-      refreshConversationSelectionButtonState(block);
+      refreshConversationSelectionButtonState(block, snapshot.byBlock.get(block));
       continue;
     }
 
@@ -83,7 +84,7 @@ function injectSingleCopyButtons() {
 
     const ensuredCopyButton = copyButton instanceof HTMLButtonElement ? copyButton : ensureConversationCopyButton(block, target);
     ensureConversationSelectionButton(block, target, ensuredCopyButton);
-    refreshConversationSelectionButtonState(block);
+    refreshConversationSelectionButtonState(block, snapshot.byBlock.get(block));
   }
 }
 

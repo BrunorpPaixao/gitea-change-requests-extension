@@ -14,7 +14,7 @@ async function testSelection(options) {
   const { conversations, blocks, stats, diagnostics, completeness, normalizedOptions } = await collectConversations(options);
   lastDiagnostics = diagnostics;
   HighlightModule.applySelectionHighlights(blocks, blocks);
-  await refreshManualSelectionUi({ applyHighlights: false });
+  await refreshManualSelectionUi({ applyHighlights: false, selectionOptions: options });
   if (Boolean(options?.debug)) {
     HighlightModule.renderDebugOverlay(blocks);
   }
@@ -31,7 +31,7 @@ async function testHighlights(options) {
   const { conversations, blocks, allBlocks, stats, diagnostics, completeness } = await collectConversations(options);
   lastDiagnostics = diagnostics;
   HighlightModule.applySelectionHighlights(allBlocks, blocks);
-  await refreshManualSelectionUi({ applyHighlights: false });
+  await refreshManualSelectionUi({ applyHighlights: false, selectionOptions: options });
   if (Boolean(options?.debug)) {
     HighlightModule.renderDebugOverlay(blocks);
   }
@@ -65,10 +65,15 @@ async function collectConversations(options) {
     return buildEmptyCollectionResult(state);
   }
 
+  for (const block of conversationBlocks) {
+    applyThreadExpandCompleteness(state, await expandConversationIfNeeded(block));
+  }
+  refreshQuoteReplyIndex();
+  const snapshot = await getSelectionSnapshot(normalizedOptions);
   const results = [];
   const selectedBlocks = [];
   const seenKeys = new Map();
-  await collectThreadConversations(conversationBlocks, normalizedOptions, state, seenKeys, results, selectedBlocks);
-  collectStandaloneConversations(standaloneCommentBlocks, normalizedOptions, state, seenKeys, results, selectedBlocks);
+  await collectThreadConversations(conversationBlocks, normalizedOptions, state, seenKeys, results, selectedBlocks, snapshot);
+  collectStandaloneConversations(standaloneCommentBlocks, normalizedOptions, state, seenKeys, results, selectedBlocks, snapshot);
   return buildFinalCollectionResult(state, results, selectedBlocks, allCollectableBlocks);
 }

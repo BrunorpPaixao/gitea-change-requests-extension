@@ -59,40 +59,14 @@ async function getManualSelectionSummary() {
     return { selectedCount: 0, totalCount: 0, visibleCount: 0 };
   }
 
-  await ensureManualSelectionStateLoaded();
-  const popupSettings = (await getPopupSettingsFromStorage()) || {};
-  const ignoreComments = popupSettings.ignoreComments !== false;
-  const blocks = collectActionableConversationNodes();
-  const eligibleBlocks = ignoreComments ? blocks.filter((block) => !isStandaloneTimelineComment(block)) : blocks;
-  let selectedCount = 0;
-  let totalCount = 0;
-
-  for (const block of eligibleBlocks) {
-    if (!(block instanceof Element)) {
-      continue;
-    }
-    const conversation = extractCopyableConversation(block);
-    if (!conversation) {
-      continue;
-    }
-    totalCount += 1;
-    if (isConversationSelectedForSummary(block, conversation)) {
-      selectedCount += 1;
-    }
-  }
-
-  return {
-    selectedCount,
-    totalCount,
-    visibleCount: totalCount,
-  };
+  const snapshot = await getSelectionSnapshot();
+  const eligible = snapshot.entries.filter((entry) => entry.conversation && entry.decision.skipped !== "deduped" && !(snapshot.options.ignoreComments && entry.standalone));
+  return { selectedCount: eligible.filter((entry) => entry.decision.selected).length, totalCount: eligible.length, visibleCount: eligible.length };
 }
 
 /** Uses the active highlight selection, falling back to manual state before a preview. */
 function isConversationSelectedForSummary(block, conversation) {
-  return SELECTION_HIGHLIGHT_BLOCKS !== null
-    ? SELECTION_HIGHLIGHT_BLOCKS.has(block)
-    : getEffectiveConversationSelection(block, conversation) === MANUAL_SELECTION_INCLUDE_VALUE;
+  return captureSelectionSnapshot().byBlock.get(block)?.decision.selected === true;
 }
 
 /**

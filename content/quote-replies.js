@@ -97,7 +97,7 @@ function getDefaultQuoteConversationSelection(block, conversation) {
 }
 
 function getEffectiveConversationSelection(block, conversation) {
-  return getManualConversationSelection(block, conversation) || getDefaultQuoteConversationSelection(block, conversation);
+  return getManualConversationSelection(block, conversation) || getDefaultQuoteConversationSelection(block, conversation) || "include";
 }
 
 /** Keep authored reply text; omit only positively matched duplicate quote spans by default. */

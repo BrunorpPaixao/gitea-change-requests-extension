@@ -41,3 +41,7 @@ var SCHEMA_VERSION = "2.1-factual";
 var lastDiagnostics = null;
 
 globalThis.GPREManualSelectionUiRefreshPromise = MANUAL_SELECTION_UI_REFRESH_PROMISE;
+
+var SELECTION_SNAPSHOT = null;
+var SELECTION_OPTIONS = null;
+var SELECTION_REVISION = 0;

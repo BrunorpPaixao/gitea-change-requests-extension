@@ -19,7 +19,7 @@ Four exclusion filters are on by default: resolved threads, outdated threads, st
 
 A **partial coverage** warning means some page content may not have loaded or parsed. Check the PR page and preview again before relying on the export or comparison.
 
-The selected-node counter counts each copyable conversation or standalone comment once, respecting the standalone-comment setting. After a preview, it reflects the highlighted selection; before a preview, it reflects saved manual selections. Numbered comment badges sit on the comment border.
+The selected-node counter counts each copyable conversation or standalone comment once, respecting the standalone-comment setting. Buttons, counters, highlights, preview, and bulk export use the same selection decisions. Ordinary conversations default to included, subject to filters; button tooltips distinguish saved preferences from effective exclusion. Numbered comment badges sit on the comment border.
 
 ## Other actions
 

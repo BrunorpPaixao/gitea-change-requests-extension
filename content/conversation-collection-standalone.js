@@ -13,10 +13,12 @@
  * @param {object[]} results Selected conversations array to append into.
  * @param {Element[]} selectedBlocks Selected DOM block array to append into.
  */
-function collectStandaloneConversations(standaloneCommentBlocks, normalizedOptions, state, seenKeys, results, selectedBlocks) {
+function collectStandaloneConversations(standaloneCommentBlocks, normalizedOptions, state, seenKeys, results, selectedBlocks, snapshot) {
   for (let index = 0; index < standaloneCommentBlocks.length; index += 1) {
     const block = standaloneCommentBlocks[index];
-    const conversation = extractStandaloneCommentConversation(block, index);
+    const captured = snapshot?.byBlock.get(block);
+    const raw = captured ? captured.conversation : extractStandaloneCommentConversation(block, index);
+    const conversation = raw ? { ...raw, comments: [...raw.comments] } : null;
     if (!conversation) {
       recordMissingConversationData(state, "standalone_comment_without_comment_data", {
         decision: "skipped_no_data_comment",
@@ -24,7 +26,7 @@ function collectStandaloneConversations(standaloneCommentBlocks, normalizedOptio
       continue;
     }
 
-    const selectionDecision = evaluateConversationSelection(block, conversation, {
+    const selectionDecision = captured?.decision || evaluateConversationSelection(block, conversation, {
       userName: normalizedOptions.userName,
       ignoreWhereLastCommentIsFromUser: normalizedOptions.ignoreWhereLastCommentIsFromUser,
       ignoreResolvedChanges: normalizedOptions.ignoreResolvedChanges,

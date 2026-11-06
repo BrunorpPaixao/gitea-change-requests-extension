@@ -37,6 +37,8 @@ const jsFiles = [
   "content/identity-utils.js",
   "content/standalone-comment-utils.js",
   "content/selection-summary-ui.js",
+  "content/selection-engine.js",
+  "content/selection-snapshot.js",
   "content/selection-actions-bootstrap.js",
   "content/quote-replies.js",
   "content/quote-reply-ui.js",

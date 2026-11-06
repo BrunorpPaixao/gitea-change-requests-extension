@@ -29,6 +29,7 @@ test("selection bootstrap observes conversations without forbidden unload listen
     setTimeout(callback) { scheduledRefresh = callback; return 1; },
     isLikelyGiteaPrPage: () => true,
     ensureConversationActionButtonStyles() {},
+    captureSelectionSnapshot: () => ({ entries: [], byBlock: new Map() }),
     refreshQuoteReplyIndex() {},
     refreshQuoteReplyUi() {},
     ensureManualSelectionStateLoaded: () => Promise.resolve(),

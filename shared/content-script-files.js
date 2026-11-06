@@ -20,6 +20,8 @@
     "content/selection-visuals.js",
     "content/quote-replies.js",
     "content/quote-reply-ui.js",
+    "content/selection-engine.js",
+    "content/selection-snapshot.js",
     "content/selection-actions-bootstrap.js",
     "content/selection-actions.js",
     "content/code-context.js",

@@ -51,7 +51,7 @@ test("grouped reviews count once and preview summary follows the two highlighted
     assert.equal(blocks.length, 2);
     assert.equal(blocks[1].id, "issuecomment-200", "preserve the grouped selection storage key");
     assert.equal(window.document.querySelectorAll("[data-gpre-manual-selection]").length, 2);
-    assert.equal((await window.getManualSelectionSummary()).selectedCount, 1);
+    assert.equal((await window.getManualSelectionSummary()).selectedCount, 2);
 
     const preview = await harness.send({ type: "TEST_SELECTION", options });
     assert.equal(preview.ok, true);

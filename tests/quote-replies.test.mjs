@@ -255,7 +255,7 @@ test("default selection exports the original and leaves quoted replies off with 
     assert.equal(sourceButton.textContent, "deselect");
     assert.equal(replyButton.getAttribute("aria-pressed"), "false");
     assert.equal(replyButton.textContent, "include reply");
-    assert.match(replyButton.title, /excluded by default/);
+    assert.match(replyButton.title, /quote reply default/);
     assert.equal((await window.getManualSelectionSummary()).selectedCount, 1);
     const preview = await harness.send({ type: "TEST_SELECTION", options });
     assert.equal(preview.count, 1);

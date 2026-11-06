@@ -13,11 +13,11 @@
  * @param {object[]} results Selected conversations array to append into.
  * @param {Element[]} selectedBlocks Selected DOM block array to append into.
  */
-async function collectThreadConversations(conversationBlocks, normalizedOptions, state, seenKeys, results, selectedBlocks) {
+async function collectThreadConversations(conversationBlocks, normalizedOptions, state, seenKeys, results, selectedBlocks, snapshot) {
   for (const block of conversationBlocks) {
-    const blockExpand = await expandConversationIfNeeded(block);
-    applyThreadExpandCompleteness(state, blockExpand);
-    const conversation = extractConversation(block);
+    const captured = snapshot?.byBlock.get(block);
+    const raw = captured ? captured.conversation : extractConversation(block);
+    const conversation = raw ? { ...raw, comments: [...raw.comments] } : null;
     if (!conversation) {
       recordMissingConversationData(state, "conversation_block_without_comment_data", {
         decision: "skipped_no_data",
@@ -25,7 +25,7 @@ async function collectThreadConversations(conversationBlocks, normalizedOptions,
       continue;
     }
 
-    const selectionDecision = evaluateConversationSelection(block, conversation, {
+    const selectionDecision = captured?.decision || evaluateConversationSelection(block, conversation, {
       userName: normalizedOptions.userName,
       ignoreWhereLastCommentIsFromUser: normalizedOptions.ignoreWhereLastCommentIsFromUser,
       ignoreResolvedChanges: normalizedOptions.ignoreResolvedChanges,

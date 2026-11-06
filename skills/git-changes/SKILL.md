@@ -90,7 +90,7 @@ For the exact accepted short keys, read [references/short-key-map.json](referenc
 - Use `views` and `counts` for deterministic workset selection and batching.
 - Use `lastComment...` fields for latest-thread-state context.
 - Use `codeContext` only as grounding evidence when present.
-- Use `completeness` and `exportOptions` to assess confidence and possible omissions.
+- Use `completeness` and `exportOptions` to assess confidence and possible omissions. Selection policy 2 unifies effective filtered inclusion across buttons, counters, preview, and bulk export. A saved include preference does not bypass filters, and explicit single-node Copy can deliberately export a node excluded from bulk selection.
 - Never treat exporter data as semantic judgment (priority/category/next actor/workflow state).
 
 ### Quoted replies

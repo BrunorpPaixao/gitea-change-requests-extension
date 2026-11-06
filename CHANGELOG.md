@@ -11,6 +11,7 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 - Add per-quote Include/Exclude controls: duplicated quote text is excluded by default while the reply's own text is retained. Choices persist per PR across copy/export formats.
 
 ### Changed
+- Unify filtered selection decisions across controls, counters, highlights, preview, and bulk exports with revisioned snapshots.
 - Update the git-changes skill and portable preparer for quote reply metadata, original-first selection defaults, and relationship-aware summaries; require skill maintenance alongside future export changes.
 - Select quoted originals and exclude matched standalone replies by default. Add explicit Include reply/Exclude reply controls and retain response references on originals via `quotedReplies`.
 - Give reply arrows distinct randomly seeded colors that stay stable during redraws, with successive vertical paths spaced 4px farther left.
