@@ -10,6 +10,10 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 - Identify uniquely matched quoted replies with source links, fading connection arrows, and `quote_reply` / `quote` node metadata including text-match-based `replyTo` references.
 - Add per-quote Include/Exclude controls: duplicated quote text is excluded by default while the reply's own text is retained. Choices persist per PR across copy/export formats.
 
+### Changed
+- Route quote arrows with square left/up/right segments while retaining the fading line and source arrowhead.
+- Preserve Gitea's own comment, header, body, and quote backgrounds when selecting nodes or changing quote inclusion.
+
 ## [1.1.3] - 2026-11-06
 
 ### Fixed

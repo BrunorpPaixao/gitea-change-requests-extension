@@ -235,7 +235,6 @@ function ensureConversationActionButtonStyles() {
       }
       .${MANUAL_SELECTION_SELECTED_CLASS} {
         position: relative !important;
-        background: transparent !important;
         box-shadow: inset 0 0 0 4px #2fb170 !important;
         border-radius: 8px !important;
       }

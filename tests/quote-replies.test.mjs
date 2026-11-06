@@ -152,7 +152,7 @@ test("quote rendering is idempotent and arrows point from reply to original with
     assert.ok(svg);
     assert.equal(svg.getAttribute("aria-hidden"), "true");
     assert.equal(window.getComputedStyle(svg).pointerEvents, "none");
-    assert.match(svg.querySelector("path[marker-end]").getAttribute("d"), /^M 300 524 C .*280 124$/);
+    assert.equal(svg.querySelector("path[marker-end]").getAttribute("d"), "M 300 524 H 252 V 124 H 280");
     assert.equal(svg.querySelectorAll("linearGradient stop").length, 2);
     const changes = [];
     const observer = new window.MutationObserver((mutations) => changes.push(...mutations));
@@ -180,5 +180,27 @@ test("failed quote persistence restores the previous mode and offers a retry", a
     assert.equal(extractReply(window).quotes[0].included, false);
     assert.ok(controls.querySelector('[role="alert"]'));
     assert.ok(Array.from(controls.querySelectorAll("button")).every((button) => !button.disabled));
+  } finally { harness.dispose(); }
+});
+
+test("quote Include/Exclude preserves the website's own quote background", async () => {
+  const harness = await harnessFor();
+  try {
+    const { window } = harness;
+    const style = window.document.createElement("style");
+    style.textContent = ".render-content blockquote { background-color: rgb(37, 40, 44); background-image: linear-gradient(to bottom, rgb(37, 40, 44), rgb(44, 48, 52)); }";
+    window.document.head.prepend(style);
+    const record = window.QUOTE_REPLY_RECORDS[0];
+    const controls = record.quote.querySelector(".gpre-quote-controls");
+    const background = () => {
+      const computed = window.getComputedStyle(record.quote);
+      return [computed.backgroundColor, computed.backgroundImage];
+    };
+    assert.equal(background()[0], "rgb(37, 40, 44)");
+    const expected = background();
+    await window.setQuoteTextMode(record, "include", controls);
+    assert.deepEqual(background(), expected);
+    await window.setQuoteTextMode(record, "exclude", controls);
+    assert.deepEqual(background(), expected);
   } finally { harness.dispose(); }
 });

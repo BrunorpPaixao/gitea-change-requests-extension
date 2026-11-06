@@ -113,7 +113,7 @@ function drawQuoteReplyArrows() {
     const endX = to.left;
     const endY = to.top + Math.min(24, to.height / 2);
     const gutter = Math.max(6, Math.min(startX, endX) - 28);
-    return { d: `M ${startX} ${startY} C ${gutter} ${startY}, ${gutter} ${endY}, ${endX} ${endY}`, startY, endY };
+    return { d: `M ${startX} ${startY} H ${gutter} V ${endY} H ${endX}`, startY, endY };
   }).filter(Boolean);
   let svg = document.getElementById("gpre-quote-connections");
   if (!paths.length) { svg?.remove(); return; }
@@ -160,7 +160,6 @@ function ensureQuoteReplyStyles() {
   style.id = "gpre-quote-reply-style";
   style.textContent = `
     [data-gpre-node-type="quote"] { border-left: 2px solid var(--color-primary, #4a90d9); position: relative; }
-    [data-gpre-node-type="quote"][data-gpre-quote-included="false"] { background: color-mix(in srgb, var(--color-secondary, #697586) 8%, transparent); }
     .gpre-quote-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 8px; margin-bottom: 6px; font-size: 11px; line-height: 1.4; }
     .gpre-quote-controls .gpre-quote-source { margin-right: auto; color: var(--color-primary, #4a90d9); }
     .gpre-quote-controls button { padding: 4px 8px; border: 1px solid var(--color-secondary, #697586); border-radius: 4px; background: var(--color-button, #29313b); color: var(--color-text, #e6edf3); cursor: pointer; font: inherit; }

@@ -297,7 +297,6 @@ function ensureHighlightStyles() {
       .gpre-highlighted-conversation {
         position: relative !important;
         border-radius: 8px !important;
-        background: transparent !important;
         box-shadow: inset 0 0 0 3px #788391 !important;
       }
       .gpre-highlighted-conversation.gpre-highlight-selected {
@@ -306,25 +305,21 @@ function ensureHighlightStyles() {
           0 0 0 2px #4e5868 !important;
       }
       .gpre-highlighted-conversation.gpre-highlight-unresolved {
-        background: transparent !important;
         box-shadow:
           inset 0 0 0 4px #2fb170,
           0 0 0 2px #2fb170 !important;
       }
       .gpre-highlighted-conversation.gpre-highlight-resolved {
-        background: transparent !important;
         box-shadow:
           inset 0 0 0 4px #3f83f8,
           0 0 0 2px #3f83f8 !important;
       }
       .gpre-highlighted-conversation.gpre-highlight-outdated {
-        background: transparent !important;
         box-shadow:
           inset 0 0 0 4px #f59e0b,
           0 0 0 2px #f59e0b !important;
       }
       .gpre-highlighted-conversation.gpre-highlight-resolved.gpre-highlight-outdated {
-        background: transparent !important;
         box-shadow:
           inset 0 0 0 3px #f59e0b,
           inset 0 0 0 6px #3f83f8,
@@ -332,7 +327,6 @@ function ensureHighlightStyles() {
           0 0 0 4px #3f83f8 !important;
       }
       .gpre-highlighted-conversation.gpre-highlight-comment {
-        background: transparent !important;
         box-shadow: none !important;
         border-radius: 0 !important;
       }
@@ -341,20 +335,17 @@ function ensureHighlightStyles() {
       }
       .timeline-item.comment.gpre-highlighted-conversation.gpre-highlight-comment .content.comment-container {
         display: block !important;
-        background: transparent !important;
         border-radius: 0 !important;
         box-shadow: none !important;
       }
       .timeline-item.comment .content.comment-container.gpre-highlight-comment {
         position: relative !important;
-        background: transparent !important;
         border: 4px solid #ec4899 !important;
         border-radius: 0 !important;
         box-shadow: none !important;
       }
       .timeline-item.comment.gpre-highlighted-conversation.gpre-highlight-comment .comment-header,
       .timeline-item.comment.gpre-highlighted-conversation.gpre-highlight-comment .comment-body {
-        background: transparent !important;
         border-color: transparent !important;
         box-shadow: none !important;
       }
