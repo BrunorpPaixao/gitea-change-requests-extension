@@ -14,6 +14,7 @@ function initializeSingleConversationCopyButtons() {
     return;
   }
 
+  initializeSelectionTracking();
   ensureConversationActionButtonStyles();
   MANUAL_SELECTION_UI_REFRESH_PROMISE = ensureManualSelectionStateLoaded().then(() =>
     refreshManualSelectionUi({ applyHighlights: false })

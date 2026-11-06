@@ -23,7 +23,7 @@ function captureSelectionSnapshot(options = SELECTION_OPTIONS || {}) {
       if (winners.get(id) !== entry) entry.decision = { ...entry.decision, selected: false, skipped: "deduped", reason: null };
     }
   }
-  const signature = JSON.stringify({ options: normalized, entries: entries.map(({ conversation, decision }) => ({ conversation, decision })) });
+  const signature = JSON.stringify({ options: Object.fromEntries(["userName", "ignoreComments", "ignoreWhereLastCommentIsFromUser", "ignoreResolvedChanges", "ignoreOutdatedChanges"].map((key) => [key, normalized[key]])), entries: entries.map(({ conversation, decision }) => ({ conversation, decision })) });
   if (SELECTION_SNAPSHOT?.signature === signature && SELECTION_SNAPSHOT.entries.every((entry, index) => entry.block === entries[index]?.block)) return SELECTION_SNAPSHOT;
   SELECTION_SNAPSHOT = { policyVersion: GPRESelectionEngine.policyVersion, revision: ++SELECTION_REVISION,
     signature, options: normalized, entries, byBlock: new Map(entries.map((entry) => [entry.block, entry])) };
@@ -35,4 +35,12 @@ async function getSelectionSnapshot(options) {
   const settings = options || (await getPopupSettingsFromStorage()) || {};
   SELECTION_OPTIONS = normalizeCollectionOptions(settings);
   return captureSelectionSnapshot(SELECTION_OPTIONS);
+}
+
+function initializeSelectionTracking() {
+  globalThis.chrome?.storage?.onChanged?.addListener((changes, area) => {
+    if (area !== "local") return;
+    if (changes[MANUAL_SELECTION_STORAGE_KEY]) MANUAL_SELECTION_STATE_HYDRATION_PROMISE = null;
+    if (changes[MANUAL_SELECTION_STORAGE_KEY] || changes[POPUP_SETTINGS_STORAGE_KEY]) queueManualSelectionUiRefresh({ applyHighlights: true });
+  });
 }

@@ -22,6 +22,7 @@
     "content/quote-reply-ui.js",
     "content/selection-engine.js",
     "content/selection-snapshot.js",
+    "content/selection-preview.js",
     "content/selection-actions-bootstrap.js",
     "content/selection-actions.js",
     "content/code-context.js",

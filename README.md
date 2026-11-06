@@ -13,7 +13,8 @@ A Manifest V3 Chrome extension that copies or downloads factual Gitea pull reque
 1. Open a Gitea PR at an HTTP(S) URL like `https://git.example.com/owner/repo/pulls/123`.
 2. Open the extension popup and check **Git user name**. It is detected from the page when possible.
 3. Click **Preview selection**. Review the included/skipped counts and coverage status; selected conversations are highlighted on the page.
-4. Click **Copy with current settings** for JSON on the clipboard, or open **Download** and click **Download JSON**.
+4. Expand **Export details** to review included/excluded IDs and reasons, omitted quote spans, and missing-original warnings. Use **Show on page** or adjust a saved preference. The preview becomes stale when content/settings change.
+5. Click **Copy with current settings** for JSON on the clipboard, or open **Download** and click **Download JSON**.
 
 Four exclusion filters are on by default: resolved threads, outdated threads, standalone comments, and threads whose last comment is from the selected user. Turn off a filter to include those items. Thread filters run in this order: resolved, outdated, then last-comment-by-user; standalone comments are handled separately. A thread excluded early does not appear in later skip counts. **Use shortened JSON keys** is also on by default; **Minify JSON output** is optional. Settings are saved locally.
 

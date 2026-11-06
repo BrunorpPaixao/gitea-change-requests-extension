@@ -21,6 +21,7 @@ function buildResultSummary(count, coverage, ignoreLastCommentByUser) {
     ["comments", stats.skippedComments],
     ["last-comment user", stats.skippedLastCommentByUser],
     ["manual exclusions", stats.skippedManuallyDeselected],
+    ["replies off by default", stats.skippedQuoteRepliesDefault],
     ["unparsed", skippedNoData],
   ].filter(([, value]) => Number(value) > 0).map(([label, value]) => `${label}: ${value}`);
   const details = [
@@ -46,6 +47,7 @@ function renderResultSummary(count, coverage) {
 }
 
 function clearResultSummary() {
+  if (typeof invalidateSelectionPreview === "function") invalidateSelectionPreview();
   summaryEl.textContent = "Selection changed; preview again.";
   coverageStatusEl.textContent = "Coverage has not been checked for these settings.";
   coverageStatusEl.dataset.state = "pending";

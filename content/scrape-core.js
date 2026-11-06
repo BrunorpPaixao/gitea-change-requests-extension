@@ -19,6 +19,7 @@ async function testSelection(options) {
     HighlightModule.renderDebugOverlay(blocks);
   }
   return {
+    preview: buildSelectionPreview(SELECTION_SNAPSHOT),
     count: conversations.length,
     stats,
     completeness,
