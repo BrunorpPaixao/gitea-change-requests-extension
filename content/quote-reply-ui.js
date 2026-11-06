@@ -112,11 +112,20 @@ function drawQuoteReplyArrows() {
     const startY = from.top + Math.min(24, from.height / 2);
     const endX = to.left;
     const endY = to.top + Math.min(24, to.height / 2);
-    const gutter = Math.max(6, Math.min(startX, endX) - 28);
-    return { d: `M ${startX} ${startY} H ${gutter} V ${endY} H ${endX}`, startY, endY };
+    if (!QUOTE_REPLY_ARROW_COLORS.has(record.key)) {
+      // A random starting hue with spaced steps keeps nearby replies distinguishable.
+      const hue = (QUOTE_REPLY_ARROW_HUE + QUOTE_REPLY_ARROW_COLORS.size * 137.508) % 360;
+      QUOTE_REPLY_ARROW_COLORS.set(record.key, `hsl(${hue.toFixed(2)}, 72%, 60%)`);
+    }
+    return { startX, startY, endX, endY, color: QUOTE_REPLY_ARROW_COLORS.get(record.key) };
   }).filter(Boolean);
   let svg = document.getElementById("gpre-quote-connections");
   if (!paths.length) { svg?.remove(); return; }
+  const gutter = Math.min(...paths.map((item) => Math.min(item.startX, item.endX))) - 28;
+  paths.forEach((item, index) => {
+    const lane = Math.max(6, gutter - index * 4);
+    item.d = `M ${item.startX} ${item.startY} H ${lane} V ${item.endY} H ${item.endX}`;
+  });
   const signature = JSON.stringify(paths);
   if (svg?.getAttribute("data-gpre-paths") === signature) return;
   if (!svg) {
@@ -138,14 +147,14 @@ function drawQuoteReplyArrows() {
     gradient.setAttribute("y1", String(item.startY)); gradient.setAttribute("y2", String(item.endY));
     for (const [offset, opacity] of [["0%", "0.15"], ["100%", "0.75"]]) {
       const stop = document.createElementNS(ns, "stop");
-      stop.setAttribute("offset", offset); stop.setAttribute("stop-color", "currentColor"); stop.setAttribute("stop-opacity", opacity);
+      stop.setAttribute("offset", offset); stop.setAttribute("stop-color", item.color); stop.setAttribute("stop-opacity", opacity);
       gradient.appendChild(stop);
     }
     const marker = document.createElementNS(ns, "marker");
     marker.id = `gpre-quote-arrow-${index}`;
     for (const [key, value] of Object.entries({ viewBox: "0 0 10 10", refX: "9", refY: "5", markerWidth: "6", markerHeight: "6", orient: "auto" })) marker.setAttribute(key, value);
     const head = document.createElementNS(ns, "path");
-    head.setAttribute("d", "M 0 0 L 10 5 L 0 10 z"); head.setAttribute("fill", "currentColor");
+    head.setAttribute("d", "M 0 0 L 10 5 L 0 10 z"); head.setAttribute("fill", item.color);
     marker.appendChild(head); defs.append(gradient, marker);
     const path = document.createElementNS(ns, "path");
     path.setAttribute("d", item.d); path.setAttribute("fill", "none");

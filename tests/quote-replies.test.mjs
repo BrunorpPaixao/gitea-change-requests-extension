@@ -204,3 +204,39 @@ test("quote Include/Exclude preserves the website's own quote background", async
     assert.deepEqual(background(), expected);
   } finally { harness.dispose(); }
 });
+
+test("multiple replies use distinct stable colors and separate vertical lanes", async () => {
+  const secondReply = comment("201", `<blockquote>${originalRendered}</blockquote><p>Follow-up reply.</p>`, `${quotedRaw}\n\nFollow-up reply.`);
+  const harness = await harnessFor(base + secondReply);
+  try {
+    const { window } = harness;
+    assert.equal(window.QUOTE_REPLY_RECORDS.length, 2);
+    window.QUOTE_REPLY_RECORDS.forEach((record, index) => {
+      record.quote.getBoundingClientRect = () => ({ left: 300 + index * 10, top: 500 + index * 200, width: 600, height: 100 });
+      record.original.querySelector(".content.comment-container").getBoundingClientRect = () => ({ left: 280, top: 100, width: 620, height: 140 });
+    });
+    window.drawQuoteReplyArrows();
+    const svg = window.document.getElementById("gpre-quote-connections");
+    const paths = Array.from(svg.querySelectorAll("path[marker-end]"));
+    assert.equal(paths[0].getAttribute("d"), "M 300 524 H 252 V 124 H 280");
+    assert.equal(paths[1].getAttribute("d"), "M 310 724 H 248 V 124 H 280");
+    const colors = Array.from(svg.querySelectorAll("linearGradient"), (gradient) => {
+      const stops = gradient.querySelectorAll("stop");
+      const color = stops[0].getAttribute("stop-color");
+      assert.equal(stops[1].getAttribute("stop-color"), color);
+      return color;
+    });
+    assert.notEqual(colors[0], colors[1]);
+    const heads = svg.querySelectorAll("marker path");
+    assert.equal(heads[0].getAttribute("fill"), colors[0]);
+    assert.equal(heads[1].getAttribute("fill"), colors[1]);
+
+    window.refreshQuoteReplyIndex();
+    window.drawQuoteReplyArrows();
+    assert.equal(svg.querySelector("path[marker-end]"), paths[0], "unchanged redraws do not replace SVG nodes");
+    assert.deepEqual(Array.from(svg.querySelectorAll("linearGradient stop:first-child"), (stop) => stop.getAttribute("stop-color")), colors);
+    window.QUOTE_REPLY_RECORDS[1].quote.getBoundingClientRect = () => ({ left: 310, top: 750, width: 600, height: 100 });
+    window.drawQuoteReplyArrows();
+    assert.deepEqual(Array.from(svg.querySelectorAll("linearGradient stop:first-child"), (stop) => stop.getAttribute("stop-color")), colors, "layout changes preserve each arrow's color");
+  } finally { harness.dispose(); }
+});
