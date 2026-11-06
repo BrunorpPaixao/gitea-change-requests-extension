@@ -146,6 +146,11 @@ def prepare(value):
         require_object(data.get("actors"), "actors")
         require_object(data.get("identityResolution"), "identityResolution")
 
+    export_options = require_object(data["exportOptions"], "exportOptions") if kind == "canonical_export" and "exportOptions" in data else {}
+    for metadata in (data, export_options):
+        for key in ("selectionPolicyVersion", "selectionOverridesHash"):
+            if key in metadata and (not isinstance(metadata[key], str) or not metadata[key]):
+                raise InputError(f"{key} must be a nonempty string")
     return {
         "format": kind,
         "schemaVersion": SCHEMA_VERSION,
@@ -154,6 +159,8 @@ def prepare(value):
         "filters": data.get("filters") if kind != "canonical_export" else data.get("exportOptions"),
         "completeness": data.get("completeness"),
         "identityResolution": data.get("identityResolution"),
+        "selectionPolicyVersion": data.get("selectionPolicyVersion") or export_options.get("selectionPolicyVersion") or "legacy",
+        "selectionOverridesHash": data.get("selectionOverridesHash") or export_options.get("selectionOverridesHash") or "legacy",
         "workset": workset,
         "missingFromCurrentView": data.get("missingFromCurrentView", []) if kind == "review_delta" else [],
     }
@@ -180,7 +187,7 @@ def summary(prepared, offset, limit):
         if any(quote_counts.values()) or any("quotes" in comment for comment in timeline):
             page[-1].update(quote_counts)
     return {
-        **{key: prepared[key] for key in ("format", "schemaVersion", "scope", "source", "filters", "completeness", "identityResolution")},
+        **{key: prepared[key] for key in ("format", "schemaVersion", "scope", "source", "filters", "completeness", "identityResolution", "selectionPolicyVersion", "selectionOverridesHash")},
         "total": len(workset),
         "offset": offset,
         "nextOffset": offset + len(page) if offset + len(page) < len(workset) else None,
@@ -210,7 +217,7 @@ def main():
             if not 0 <= args.item < len(prepared["workset"]):
                 raise InputError(f"item index must be between 0 and {len(prepared['workset']) - 1}")
             change_kind, conversation = prepared["workset"][args.item]
-            result = {key: prepared[key] for key in ("format", "scope", "source", "filters", "completeness", "identityResolution")}
+            result = {key: prepared[key] for key in ("format", "scope", "source", "filters", "completeness", "identityResolution", "selectionPolicyVersion", "selectionOverridesHash")}
             result.update({"index": args.item, "kind": change_kind, "conversation": conversation})
         print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
     except (InputError, OSError, UnicodeError) as error:

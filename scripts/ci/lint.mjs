@@ -5,6 +5,9 @@
 import { execFileSync } from "node:child_process";
 
 const jsFiles = [
+  "scripts/release/core.mjs",
+  "scripts/release/release.mjs",
+  "scripts/release/package.mjs",
   "shared/content-script-files.js",
   "popup/state.js",
   "popup/ui.js",

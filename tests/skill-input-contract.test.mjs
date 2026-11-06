@@ -175,3 +175,16 @@ test("malformed quote metadata fails validation without guessing relationships",
     assert.match(result.stderr, /Invalid git-changes input:/);
   }
 });
+
+
+test("selection policy provenance survives canonical, short, queue and delta summaries", () => {
+  const full = { ...fixture, exportOptions: { ...fixture.exportOptions, selectionPolicyVersion: "2", selectionOverridesHash: "choices" } };
+  const profiles = [full, serializer.transformForExport(full, { shortKeys: true }), profileContext.GPREReviewQueue.buildReviewQueue(full),
+    { format: "gpre.review_delta.v1", schemaVersion: full.schemaVersion, source: full.source, filters: {}, completeness: full.completeness, selectionPolicyVersion: "2", selectionOverridesHash: "choices", newConversations: full.conversations, changedConversations: [], missingFromCurrentView: [] }];
+  for (const profile of profiles) {
+    const result = prepareInput(profile);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.json.selectionPolicyVersion, "2");
+    assert.equal(result.json.selectionOverridesHash, "choices");
+  }
+});

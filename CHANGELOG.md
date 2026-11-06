@@ -7,6 +7,7 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 ## [Unreleased]
 
 ### Added
+- Add deterministic skill/runtime packaging, checked release preparation with rollback, explicit commit/tag finalization, and verified-tag CI publication with source-bound assets.
 - Explain preserved unmatched, ambiguous, partial, and unsupported quotes on the page and in preview diagnostics without guessing relationships.
 - Add paged export details with inclusion reasons, omitted quote counts, missing-source warnings, page navigation, saved-preference controls, and stale-preview detection.
 - Identify uniquely matched quoted replies with source links, fading connection arrows, and `quote_reply` / `quote` node metadata including text-match-based `replyTo` references.
