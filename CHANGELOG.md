@@ -6,6 +6,8 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 
 ## [Unreleased]
 
+## [1.1.4] - 2026-11-07
+
 ### Added
 - Add deterministic skill/runtime packaging, checked release preparation with rollback, explicit commit/tag finalization, and verified-tag CI publication with source-bound assets.
 - Explain preserved unmatched, ambiguous, partial, and unsupported quotes on the page and in preview diagnostics without guessing relationships.
