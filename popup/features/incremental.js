@@ -42,7 +42,11 @@ async function buildComparisonSnapshot(payload) {
     throw new Error("Comparison requires a complete export. Review the coverage warning first.");
   }
   return {
-    format: "gpre.comparison_snapshot.v1",
+    format: "gpre.comparison_snapshot.v2",
+    schemaVersion: payload.schemaVersion,
+    selectionPolicyVersion: payload.exportOptions?.selectionPolicyVersion || "legacy",
+    selectionOverridesHash: payload.exportOptions?.selectionOverridesHash || "legacy",
+    exporterVersion: payload.exportOptions?.exporterVersion || null,
     sourceUrl: comparisonStorageKey(payload.source.url),
     filters: comparisonFilters(payload),
     exportFingerprint: payload.exportFingerprint || null,
@@ -51,11 +55,14 @@ async function buildComparisonSnapshot(payload) {
 }
 
 function buildReviewDelta(payload, previous, current) {
-  if (!previous || previous.format !== "gpre.comparison_snapshot.v1" ||
+  if (!previous || previous.format !== "gpre.comparison_snapshot.v2" ||
       !previous.hashes || typeof previous.hashes !== "object" ||
       previous.sourceUrl !== current.sourceUrl ||
+      previous.schemaVersion !== current.schemaVersion ||
+      previous.selectionPolicyVersion !== current.selectionPolicyVersion ||
+      previous.selectionOverridesHash !== current.selectionOverridesHash ||
       JSON.stringify(previous.filters) !== JSON.stringify(current.filters)) {
-    throw new Error("No matching previous export for this PR and filter set. Copy a full export first.");
+    throw new Error("No matching previous export: PR, filters, schema, or selection policy changed, or the baseline is legacy. Copy a complete full export to refresh the baseline.");
   }
   const newConversations = [];
   const changedConversations = [];
@@ -73,6 +80,8 @@ function buildReviewDelta(payload, previous, current) {
     schemaVersion: payload.schemaVersion,
     source: payload.source,
     filters: current.filters,
+    selectionPolicyVersion: current.selectionPolicyVersion,
+    selectionOverridesHash: current.selectionOverridesHash,
     completeness: payload.completeness,
     baselineFingerprint: previous.exportFingerprint,
     currentFingerprint: current.exportFingerprint,

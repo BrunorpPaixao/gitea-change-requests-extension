@@ -97,6 +97,9 @@
         "verboseDiagnostics"
       ],
       "properties": {
+        "selectionPolicyVersion": { "type": "string" },
+        "selectionOverridesHash": { "type": "string" },
+        "exporterVersion": { "type": ["string", "null"] },
         "gitUserName": { "type": ["string", "null"] },
         "ignoreLastCommentByUser": { "type": "boolean" },
         "ignoreResolved": { "type": "boolean" },

@@ -6,11 +6,19 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 
 ## [Unreleased]
 
+## [1.1.4] - 2026-11-07
+
 ### Added
+- Add deterministic skill/runtime packaging, checked release preparation with rollback, explicit commit/tag finalization, and verified-tag CI publication with source-bound assets.
+- Explain preserved unmatched, ambiguous, partial, and unsupported quotes on the page and in preview diagnostics without guessing relationships.
+- Add paged export details with inclusion reasons, omitted quote counts, missing-source warnings, page navigation, saved-preference controls, and stale-preview detection.
 - Identify uniquely matched quoted replies with source links, fading connection arrows, and `quote_reply` / `quote` node metadata including text-match-based `replyTo` references.
 - Add per-quote Include/Exclude controls: duplicated quote text is excluded by default while the reply's own text is retained. Choices persist per PR across copy/export formats.
 
 ### Changed
+- Cache unchanged comment and quote facts, flush relevant queued mutations before exporting, and ignore unrelated page/extension UI updates.
+- Version comparison baselines by export schema, selection policy and explicit-choice fingerprint; require a new complete baseline when compatibility changes.
+- Unify filtered selection decisions across controls, counters, highlights, preview, and bulk exports with revisioned snapshots.
 - Update the git-changes skill and portable preparer for quote reply metadata, original-first selection defaults, and relationship-aware summaries; require skill maintenance alongside future export changes.
 - Select quoted originals and exclude matched standalone replies by default. Add explicit Include reply/Exclude reply controls and retain response references on originals via `quotedReplies`.
 - Give reply arrows distinct randomly seeded colors that stay stable during redraws, with successive vertical paths spaced 4px farther left.

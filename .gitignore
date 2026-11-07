@@ -46,3 +46,7 @@ coverage/
 tmp/
 temp/
 .cache/
+
+# Local validated release state and temporary CI bundles
+dist/release-*.json
+dist/release-assets/

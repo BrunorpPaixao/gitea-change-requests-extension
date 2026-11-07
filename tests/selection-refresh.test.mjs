@@ -51,7 +51,7 @@ test("host scripts reacting to control attributes cannot sustain a refresh loop"
     hostObserver = new window.MutationObserver(() => { marker.textContent = "Host updated its UI"; });
     hostObserver.observe(window.document.querySelector("[data-gpre-manual-selection]"), { attributes: true });
     await new Promise((resolve) => setTimeout(resolve, 180));
-    assert.equal(scans, 1, "a stable refresh must not provoke further host DOM changes");
+    assert.equal(scans, 0, "unrelated host UI must not provoke conversation rescans");
   } finally {
     hostObserver?.disconnect();
     harness.dispose();

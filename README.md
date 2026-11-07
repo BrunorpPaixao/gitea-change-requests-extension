@@ -13,13 +13,14 @@ A Manifest V3 Chrome extension that copies or downloads factual Gitea pull reque
 1. Open a Gitea PR at an HTTP(S) URL like `https://git.example.com/owner/repo/pulls/123`.
 2. Open the extension popup and check **Git user name**. It is detected from the page when possible.
 3. Click **Preview selection**. Review the included/skipped counts and coverage status; selected conversations are highlighted on the page.
-4. Click **Copy with current settings** for JSON on the clipboard, or open **Download** and click **Download JSON**.
+4. Expand **Export details** to review included/excluded IDs and reasons, omitted quote spans, and missing-original warnings. Use **Show on page** or adjust a saved preference. The preview becomes stale when content/settings change.
+5. Click **Copy with current settings** for JSON on the clipboard, or open **Download** and click **Download JSON**.
 
 Four exclusion filters are on by default: resolved threads, outdated threads, standalone comments, and threads whose last comment is from the selected user. Turn off a filter to include those items. Thread filters run in this order: resolved, outdated, then last-comment-by-user; standalone comments are handled separately. A thread excluded early does not appear in later skip counts. **Use shortened JSON keys** is also on by default; **Minify JSON output** is optional. Settings are saved locally.
 
 A **partial coverage** warning means some page content may not have loaded or parsed. Check the PR page and preview again before relying on the export or comparison.
 
-The selected-node counter counts each copyable conversation or standalone comment once, respecting the standalone-comment setting. After a preview, it reflects the highlighted selection; before a preview, it reflects saved manual selections. Numbered comment badges sit on the comment border.
+The selected-node counter counts each copyable conversation or standalone comment once, respecting the standalone-comment setting. Buttons, counters, highlights, preview, and bulk export use the same selection decisions. Ordinary conversations default to included, subject to filters; button tooltips distinguish saved preferences from effective exclusion. Numbered comment badges sit on the comment border.
 
 ## Other actions
 
@@ -35,7 +36,7 @@ The selected-node counter counts each copyable conversation or standalone commen
 
 A complete full export, review queue, or bundle saves a comparison baseline containing IDs, filters, and hashes, without comment bodies. Use **Clear comparison history for this PR** to remove it. Changing filters requires a new complete export before **Copy changes** is available again.
 
-Quoted replies are linked to a unique earlier comment with the same complete rendered text, normalizing whitespace. A **Reply to #…** link and fading arrow show the source. Referenced originals are selected by default; matched standalone replies require **Include reply**. Originals carry `quotedReplies` references even when responses are excluded. Included replies export as `quote_reply` nodes with comment-level `replyTo` references and quote inclusion metadata. The relation is explicitly marked `exact_quote_text`: it records a text match, not confirmed reply intent. Unmatched, partial, ambiguous, or unsafe-to-remove quotes remain intact. Choices are saved per PR. Quote nodes do not increase conversation counts. A referenced original may be outside the current export if explicitly deselected or filtered out. Per-node **Copy** remains an explicit export of that node regardless of its selection state.
+Quoted replies are linked to a unique earlier comment with the same complete rendered text, normalizing whitespace. A **Reply to #…** link and fading arrow show the source. Referenced originals are selected by default; matched standalone replies require **Include reply**. Originals carry `quotedReplies` references even when responses are excluded. Included replies export as `quote_reply` nodes with comment-level `replyTo` references and quote inclusion metadata. The relation is explicitly marked `exact_quote_text`: it records a text match, not confirmed reply intent. Unmatched, partial, ambiguous, or unsafe-to-remove quotes remain intact, with an explanation beside the quote and aggregate checks in Export details. Choices are saved per PR. Quote nodes do not increase conversation counts. A referenced original may be outside the current export if explicitly deselected or filtered out. Per-node **Copy** remains an explicit export of that node regardless of its selection state.
 
 ## Optional AI handoff
 
@@ -57,8 +58,10 @@ The skill understands `replyTo`, `quotedReplies`, and quote inclusion metadata. 
 - **Unexpected selection:** check the four filters, Git user name, and **Preview selection** counts.
 - **Incomplete export:** reload the PR and wait for conversations to load. Enable **Debug** for **Copy Diagnostics** or **Download Diagnostics**; **Verbose diagnostics** adds per-thread decisions.
 
+Unchanged comment facts and quote text are cached in memory. Relevant edits and source insertion/removal invalidate affected facts before export; unrelated sidebar updates and copy feedback do not rebuild quote matching.
+
 ## Development
 
 Runtime code is plain JavaScript in `popup/`, `content/`, and `shared/`; the popup injects content scripts only into the active PR tab. The extension uses `activeTab`, `tabs`, and `scripting` for page access, `storage` for settings and comparison state, and `clipboardWrite`/`downloads` for exports.
 
-Run `npm ci` and `npm run ci` to check the source. `npm run release:package` writes both `dist/gitea-pr-review-exporter.zip` and `dist/gitea-pr-review-exporter-v<VERSION>.zip`. See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidance and [CHANGELOG.md](CHANGELOG.md) for release notes.
+Run `npm ci` and `npm run ci` to check the source. `npm run skill:package` refreshes the portable skill. `npm run release:prepare -- X.Y.Z` prepares a checked release; explicit finalization commits/tags it, and pushing the reviewed tag triggers verified CI publication. See the [release workflow](CONTRIBUTING.md#release-workflow). `npm run release:package` writes both `dist/gitea-pr-review-exporter.zip` and `dist/gitea-pr-review-exporter-v<VERSION>.zip`. See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidance and [CHANGELOG.md](CHANGELOG.md) for release notes.

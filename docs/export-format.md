@@ -309,3 +309,7 @@ By default, `filtersApplied` and `stats` are omitted unless **Script stats** is 
 ### Example fixtures
 - [Full PR export](../tests/fixtures/schema-v2.1-output-example.json)
 - [Single conversation export](../tests/fixtures/schema-v2.1-single-output-example.json)
+
+## Selection and comparison compatibility
+
+Full exports include optional exportOptions.selectionPolicyVersion, selectionOverridesHash (a stable fingerprint of PR-scoped explicit conversation/quote choices), and exporterVersion. Queue/delta profiles retain policy identity. Baselines store schema/policy/choice compatibility plus IDs and hashes, never comment bodies. Legacy or incompatible baselines require a fresh complete full export; compatible app patch changes alone do not block comparison. Changing explicit scope or quote inclusion requires a new baseline rather than appearing as a reviewer edit.

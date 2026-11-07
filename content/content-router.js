@@ -26,6 +26,11 @@
       return;
     }
 
+    if (["GET_SELECTION_PREVIEW", "GET_SELECTION_REVISION", "FOCUS_SELECTION_NODE", "TOGGLE_SELECTION_NODE"].includes(message.type)) {
+      handleSelectionPreviewMessage(message).then((result) => sendResponse({ ok: true, ...result }))
+        .catch((error) => sendResponse({ ok: false, error: error.message || String(error) }));
+      return true;
+    }
     if (message.type === SCRAPE_ACTION) {
       core
         .scrape(message.options || {})

@@ -41,6 +41,13 @@
         <p id="coverageStatus" class="coverage-status" aria-live="polite">Preview a selection to check export coverage.</p>
         <p id="resultDetails" class="result-details"></p>
         <p id="activeFilters" class="result-details"></p>
+        <details id="selectionPreview" class="selection-preview" hidden>
+          <summary>Export details</summary>
+          <p id="previewSelectionStatus" aria-live="polite"></p>
+          <p id="selectionPreviewWarnings" class="field-help" role="status"></p>
+          <ol id="selectionPreviewItems"></ol>
+          <nav id="selectionPreviewPager" aria-label="Preview pages"></nav>
+        </details>
         <button id="testSelectionBtn" class="preview-btn" type="button">Preview selection</button>
         <section id="feedbackPanel" class="feedback" aria-live="polite" hidden>
           <p id="status" class="status"></p>
@@ -252,6 +259,7 @@
     <script src="features/export-metrics.js"></script>
     <script src="features/export-status.js"></script>
     <script src="features/result-summary.js"></script>
+    <script src="features/selection-preview.js"></script>
     <script src="features/bootstrap.js"></script>
     <script src="features/export-data.js"></script>
     <script src="features/review-queue.js"></script>

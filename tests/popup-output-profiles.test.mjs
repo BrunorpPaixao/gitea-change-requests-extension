@@ -86,3 +86,26 @@ test("review queue download uses its own JSON file and preserves a comparison ba
   assert.equal(saved, true);
   assert.equal(JSON.parse(await blob.text()).format, "gpre.review_queue.v1");
 });
+
+test("baseline compatibility rejects legacy and changed policies but allows compatible app patches", async () => {
+  const api = context.GPREIncremental;
+  const versioned = { ...payload, exportOptions: { ...payload.exportOptions, selectionPolicyVersion: "2", selectionOverridesHash: "abc", exporterVersion: "1.1.3" } };
+  const first = await api.buildComparisonSnapshot(versioned);
+  assert.equal(first.format, "gpre.comparison_snapshot.v2");
+  assert.equal(JSON.stringify(first).includes("Change this"), false);
+  const patch = await api.buildComparisonSnapshot({ ...versioned, exportOptions: { ...versioned.exportOptions, exporterVersion: "1.1.4" } });
+  assert.equal(api.buildReviewDelta(versioned, first, patch).changedConversations.length, 0);
+  for (const change of [
+    { format: "gpre.comparison_snapshot.v1" }, { schemaVersion: "future" },
+    { selectionPolicyVersion: "3" }, { selectionOverridesHash: "changed" },
+    { sourceUrl: "other-pr" },
+  ]) assert.throws(() => api.buildReviewDelta(versioned, { ...first, ...change }, first), /Copy a complete full export/);
+  let stored;
+  context.chrome = { storage: { local: { set: async (value) => { stored = value; } } } };
+  assert.equal(await context.saveComparisonBaseline(versioned), true);
+  const before = stored;
+  assert.equal(await context.saveComparisonBaseline({ ...versioned, completeness: { ...versioned.completeness, allThreadsLoaded: false } }), false);
+  assert.equal(stored, before);
+  context.chrome.storage.local.set = async () => { throw new Error("storage failed"); };
+  assert.equal(await context.saveComparisonBaseline(versioned), false);
+});

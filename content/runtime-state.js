@@ -41,3 +41,18 @@ var SCHEMA_VERSION = "2.1-factual";
 var lastDiagnostics = null;
 
 globalThis.GPREManualSelectionUiRefreshPromise = MANUAL_SELECTION_UI_REFRESH_PROMISE;
+
+var SELECTION_SNAPSHOT = null;
+var SELECTION_OPTIONS = null;
+var SELECTION_REVISION = 0;
+
+var QUOTE_REPLY_DIAGNOSTICS = [];
+
+var PAGE_NODE_REVISIONS = new WeakMap();
+var PAGE_CONTENT_REVISION = 0;
+var QUOTE_TEXT_CACHE = new WeakMap();
+var QUOTE_MARKDOWN_CACHE = new WeakMap();
+var CONVERSATION_FACT_CACHE = new WeakMap();
+var QUOTE_INDEX_DIRTY = true;
+var QUOTE_INDEX_PAGE_URL = null;
+var PAGE_PROCESSING_METRICS = { quoteIndexBuilds: 0, normalizedTextReads: 0, conversationExtractions: 0 };

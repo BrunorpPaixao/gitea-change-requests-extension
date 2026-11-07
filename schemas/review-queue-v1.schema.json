@@ -5,6 +5,8 @@
   "type": "object",
   "required": ["format", "schemaVersion", "scope", "source", "actors", "identityResolution", "filters", "completeness", "conversations"],
   "properties": {
+    "selectionPolicyVersion": { "type": "string" },
+    "selectionOverridesHash": { "type": "string" },
     "format": { "const": "gpre.review_queue.v1" },
     "schemaVersion": { "const": "2.1-factual" },
     "scope": { "type": "object", "properties": { "type": { "enum": ["pull_request", "single_conversation"] } }, "required": ["type"] },

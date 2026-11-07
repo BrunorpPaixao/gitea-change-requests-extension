@@ -17,6 +17,7 @@
  */
 function buildDiagnosticsPayload({ mode, normalizedOptions, stats, decisions, warning, startedAt }) {
   return {
+    processing: { ...PAGE_PROCESSING_METRICS },
     mode: mode || "collect",
     generatedAt: new Date().toISOString(),
     startedAt: new Date(startedAt || Date.now()).toISOString(),
@@ -35,6 +36,7 @@ function buildDiagnosticsPayload({ mode, normalizedOptions, stats, decisions, wa
       skippedNoConversationData: Number(stats?.skippedNoConversationData || 0),
       deduped: Number(stats?.deduped || 0),
     },
+    quoteMatches: QUOTE_REPLY_DIAGNOSTICS.reduce((counts, item) => { counts[item.status] = (counts[item.status] || 0) + 1; return counts; }, {}),
     decisions: Array.isArray(decisions) ? decisions : [],
   };
 }

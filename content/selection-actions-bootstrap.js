@@ -14,6 +14,7 @@ function initializeSingleConversationCopyButtons() {
     return;
   }
 
+  initializeSelectionTracking();
   ensureConversationActionButtonStyles();
   MANUAL_SELECTION_UI_REFRESH_PROMISE = ensureManualSelectionStateLoaded().then(() =>
     refreshManualSelectionUi({ applyHighlights: false })
@@ -22,10 +23,7 @@ function initializeSingleConversationCopyButtons() {
   injectSingleCopyButtons();
 
   MANUAL_SELECTION_MUTATION_OBSERVER = new MutationObserver((mutations) => {
-    if (MANUAL_SELECTION_SUPPRESS_NEXT_MUTATION_REFRESH) {
-      return;
-    }
-    if (!mutations.length || mutations.every(isConversationActionUiMutation)) {
+    if (!mutations.length || !markSelectionContentChanges(mutations)) {
       return;
     }
     if (MANUAL_SELECTION_MUTATION_REFRESH_TIMER !== null) {
@@ -38,7 +36,7 @@ function initializeSingleConversationCopyButtons() {
       queueManualSelectionUiRefresh({ applyHighlights: false });
     }, 50);
   });
-  MANUAL_SELECTION_MUTATION_OBSERVER.observe(document.body, { childList: true, subtree: true });
+  MANUAL_SELECTION_MUTATION_OBSERVER.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeOldValue: true, attributeFilter: ["title", "data-tooltip-content", "class", "id", "data-poster", "data-owner", "data-comment-id", "data-action", "datetime", "data-user", "data-username", "data-author", "href", "value", "hidden", "aria-expanded"] });
   // Keep observing for the document's lifetime, including back/forward cache restores.
   // The browser releases the observer with the document; no unload handler is needed.
 }
@@ -66,7 +64,8 @@ function injectSingleCopyButtons() {
   }
   refreshQuoteReplyIndex();
   refreshQuoteReplyUi();
-  const blocks = collectActionableConversationNodes();
+  const snapshot = captureSelectionSnapshot();
+  const blocks = snapshot.entries.map((entry) => entry.block);
   for (const block of blocks) {
     if (!(block instanceof Element)) {
       continue;
@@ -75,7 +74,7 @@ function injectSingleCopyButtons() {
     const copyButton = block.querySelector(`.${SINGLE_COPY_BUTTON_CLASS}`);
     const selectionButton = block.querySelector(`.${MANUAL_SELECTION_BUTTON_CLASS}`);
     if (copyButton instanceof HTMLButtonElement && selectionButton instanceof HTMLButtonElement) {
-      refreshConversationSelectionButtonState(block);
+      refreshConversationSelectionButtonState(block, snapshot.byBlock.get(block));
       continue;
     }
 
@@ -83,7 +82,7 @@ function injectSingleCopyButtons() {
 
     const ensuredCopyButton = copyButton instanceof HTMLButtonElement ? copyButton : ensureConversationCopyButton(block, target);
     ensureConversationSelectionButton(block, target, ensuredCopyButton);
-    refreshConversationSelectionButtonState(block);
+    refreshConversationSelectionButtonState(block, snapshot.byBlock.get(block));
   }
 }
 

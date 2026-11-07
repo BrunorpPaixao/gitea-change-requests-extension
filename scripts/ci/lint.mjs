@@ -5,6 +5,9 @@
 import { execFileSync } from "node:child_process";
 
 const jsFiles = [
+  "scripts/release/core.mjs",
+  "scripts/release/release.mjs",
+  "scripts/release/package.mjs",
   "shared/content-script-files.js",
   "popup/state.js",
   "popup/ui.js",
@@ -37,7 +40,12 @@ const jsFiles = [
   "content/identity-utils.js",
   "content/standalone-comment-utils.js",
   "content/selection-summary-ui.js",
+  "content/selection-engine.js",
+  "content/selection-snapshot.js",
+  "content/selection-preview.js",
+  "popup/features/selection-preview.js",
   "content/selection-actions-bootstrap.js",
+  "content/page-processing.js",
   "content/quote-replies.js",
   "content/quote-reply-ui.js",
   "content/manual-selection-export.js",

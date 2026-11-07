@@ -17,6 +17,7 @@ import {
 
 test("standalone comment nodes get copy and manual selection controls", async () => {
   const storageLocal = {
+    "gitea-pr-review-exporter-manual-selections-v1": { "git.example.com/acme/sample-repo#42": { "comment-9001": "exclude" } },
     [popupSettingsStorageKey]: {
       ignoreComments: false,
     },
@@ -28,6 +29,7 @@ test("standalone comment nodes get copy and manual selection controls", async ()
   });
 
   try {
+    await harness.window.GPREManualSelectionUiRefreshPromise;
     const commentBlock = harness.window.document.querySelector("#comment-9001");
     assert.ok(commentBlock);
 
@@ -36,7 +38,7 @@ test("standalone comment nodes get copy and manual selection controls", async ()
     assert.ok(copyButton);
     assert.ok(selectionButton);
     assert.equal(copyButton.getAttribute("title"), "Copy this comment as JSON");
-    assert.equal(selectionButton.getAttribute("title"), "Select this comment for the export");
+    assert.match(selectionButton.getAttribute("title"), /Excluded: manual exclude/);
 
     const standaloneConversation = harness.window.extractStandaloneCommentConversation(commentBlock, 0);
     assert.ok(standaloneConversation);
@@ -55,7 +57,7 @@ test("standalone comment nodes get copy and manual selection controls", async ()
 
     const summaryEl = harness.window.document.querySelector("#gpre-manual-selection-summary");
     assert.ok(summaryEl);
-    assert.equal(summaryEl.textContent, "Selected PR nodes: 1 / 2");
+    assert.equal(summaryEl.textContent, "Selected PR nodes: 2 / 2");
   } finally {
     harness.dispose();
   }
@@ -136,7 +138,7 @@ test("failed manual selection restores the selection button and leaves it unsele
     assert.equal(button.getAttribute("aria-pressed"), "false");
 
     await new Promise((resolve) => setTimeout(resolve, 1620));
-    assert.equal(button.textContent, "select");
+    assert.equal(button.textContent, "exclude explicitly");
     assert.equal(button.querySelector(".gpre-copy-single-icon"), null);
   } finally {
     harness.dispose();
@@ -173,7 +175,7 @@ test("preloaded standalone comment selection keeps the button label and count in
     assert.equal(selectionButton.getAttribute("aria-pressed"), "true");
     assert.equal(commentBlock.classList.contains("gpre-highlighted-conversation"), false);
     assert.equal(commentBlock.querySelectorAll(".gpre-highlight-badge").length, 0);
-    assert.equal(harness.window.document.querySelector("#gpre-manual-selection-summary")?.textContent, "Selected PR nodes: 1 / 2");
+    assert.equal(harness.window.document.querySelector("#gpre-manual-selection-summary")?.textContent, "Selected PR nodes: 2 / 2");
   } finally {
     harness.dispose();
   }
@@ -348,7 +350,7 @@ test("ignore comments suppresses standalone comment highlight and badge", async 
 });
 
 test("deselecting a selection removes its badge and renumbers the remaining badges", async () => {
-  const manualStorage = {};
+  const manualStorage = { [popupSettingsStorageKey]: { ignoreResolvedChanges: false, ignoreOutdatedChanges: false } };
   const harness = createContentHarness({
     html: standardHtml,
     url: "https://git.example.com/acme/sample-repo/pulls/42",
@@ -369,11 +371,7 @@ test("deselecting a selection removes its badge and renumbers the remaining badg
     assert.ok(firstToggleButton);
     assert.ok(secondToggleButton);
 
-    firstToggleButton.click();
-    await harness.window.GPREManualSelectionUiRefreshPromise;
-    secondToggleButton.click();
-    await harness.window.GPREManualSelectionUiRefreshPromise;
-
+    await harness.window.refreshManualSelectionUi({ applyHighlights: true });
     assert.equal(harness.window.document.querySelectorAll(".gpre-highlight-badge").length, 2);
     firstToggleButton.click();
     await harness.window.GPREManualSelectionUiRefreshPromise;

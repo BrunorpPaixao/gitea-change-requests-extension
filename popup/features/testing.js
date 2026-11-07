@@ -24,6 +24,7 @@ async function handleTestSelection() {
       throw new Error(response?.error || "Unable to test selection on this page.");
     }
 
+    if (response.preview) renderSelectionPreview(response.preview, tab.id);
     const count = Number(response.count || 0);
     const stats = response.stats || null;
     markDiagnosticsReadyCue();

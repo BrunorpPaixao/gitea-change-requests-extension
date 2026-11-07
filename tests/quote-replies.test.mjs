@@ -255,7 +255,7 @@ test("default selection exports the original and leaves quoted replies off with 
     assert.equal(sourceButton.textContent, "deselect");
     assert.equal(replyButton.getAttribute("aria-pressed"), "false");
     assert.equal(replyButton.textContent, "include reply");
-    assert.match(replyButton.title, /excluded by default/);
+    assert.match(replyButton.title, /quote reply default/);
     assert.equal((await window.getManualSelectionSummary()).selectedCount, 1);
     const preview = await harness.send({ type: "TEST_SELECTION", options });
     assert.equal(preview.count, 1);
@@ -331,4 +331,37 @@ test("an intermediate quoted reply stays selected when it is the original for a 
     assert.equal(middle.text, "Updated retries.");
     assert.equal(harness.window.document.getElementById("issuecomment-300").querySelector("[data-gpre-manual-selection]").getAttribute("aria-pressed"), "false");
   } finally { harness.dispose(); }
+});
+
+test("quote explanations preserve text and update when an original becomes available", async () => {
+  const harness = await harnessFor(reply);
+  try {
+    const { window } = harness;
+    assert.equal(window.QUOTE_REPLY_DIAGNOSTICS[0].status, "no_earlier_source");
+    assert.match(window.document.querySelector(".gpre-quote-note").textContent, /kept in export/);
+    assert.ok(extractReply(window).text.startsWith(">"));
+    assert.ok(!extractReply(window).text.includes("No earlier original"));
+    const wrapper = window.document.createElement("div");
+    wrapper.innerHTML = comment("100", originalRendered, originalRaw, true);
+    window.document.getElementById("issuecomment-200").before(wrapper.firstElementChild);
+    window.injectSingleCopyButtons();
+    assert.equal(window.QUOTE_REPLY_DIAGNOSTICS[0].status, "matched");
+    assert.equal(window.document.querySelector(".gpre-quote-note"), null);
+    assert.ok(window.document.querySelector(".gpre-quote-controls"));
+  } finally { harness.dispose(); }
+});
+
+test("ambiguous and unsupported quotes have diagnostic explanations without links", async () => {
+  for (const [body, status] of [
+    [comment("100", originalRendered, originalRaw) + comment("101", originalRendered, originalRaw) + reply, "ambiguous"],
+    [comment("100", originalRendered, "Different Markdown") + reply, "unsupported_markdown"],
+    [comment("100", originalRendered, originalRaw) + comment("200", "<blockquote><p>Please use atomic writes.</p></blockquote><p>Done</p>", "> Please use atomic writes.\n\nDone"), "partial_only"],
+  ]) {
+    const harness = await harnessFor(body);
+    try {
+      assert.equal(harness.window.QUOTE_REPLY_DIAGNOSTICS[0].status, status);
+      assert.equal(harness.window.QUOTE_REPLY_RECORDS.length, 0);
+      assert.ok(extractReply(harness.window).text.startsWith(">"));
+    } finally { harness.dispose(); }
+  }
 });

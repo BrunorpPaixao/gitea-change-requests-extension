@@ -1,46 +1,6 @@
-/**
- * Release packaging script.
- * Builds the distributable ZIP containing extension runtime assets.
- */
-import { copyFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
-import { basename, resolve } from "node:path";
-
-const root = resolve(".");
-const distDir = resolve(root, "dist");
-mkdirSync(distDir, { recursive: true });
-
-const packageJsonPath = resolve(root, "package.json");
-const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
-const packageName = packageJson.name;
-const packageVersion = packageJson.version;
-
-if (!packageName || !packageVersion) {
-  throw new Error("package.json must include both `name` and `version`.");
-}
-
-const outFile = resolve(distDir, `${packageName}.zip`);
-const versionedOutFile = resolve(distDir, `${packageName}-v${packageVersion}.zip`);
-if (existsSync(outFile)) {
-  execFileSync("rm", ["-f", outFile], { stdio: "inherit" });
-}
-
-const include = [
-  "manifest.json",
-  "popup",
-  "styles.css",
-  "content",
-  "shared",
-  "icons",
-];
-
-try {
-  execFileSync("zip", ["-r", outFile, ...include, "-x", "*/AGENTS.md"], { stdio: "inherit" });
-  copyFileSync(outFile, versionedOutFile);
-} catch (error) {
-  throw new Error(
-    "Failed to package extension. Ensure `zip` is installed and run from project root."
-  );
-}
-
-console.log(`packaged: ${basename(outFile)} and ${basename(versionedOutFile)}`);
+import { resolve } from "node:path";
+import { packageExtension } from "./core.mjs";
+const args = process.argv.slice(2);
+if (args.length && (args.length !== 2 || args[0] !== "--out-dir")) throw new Error("Use --out-dir PATH for an alternate destination");
+packageExtension(process.cwd(), args.length ? resolve(args[1]) : undefined);
+console.log("Verified stable and versioned extension archives");

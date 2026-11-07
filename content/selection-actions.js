@@ -59,45 +59,20 @@ async function refreshManualSelectionUi(options = {}) {
     return;
   }
   await ensureManualSelectionStateLoaded();
+  if (!globalThis.document?.body) return;
   refreshQuoteReplyUi();
-  const popupSettings = (await getPopupSettingsFromStorage()) || {};
-  const ignoreComments = popupSettings.ignoreComments !== false;
-  const blocks = collectActionableConversationNodes();
-  const eligibleBlocks = [];
-  const selectedBlocks = [];
-
-  for (const block of blocks) {
-    if (!(block instanceof Element)) {
-      continue;
-    }
-    refreshConversationSelectionButtonState(block);
-    if (ignoreComments && isStandaloneTimelineComment(block)) {
-      continue;
-    }
-    const conversation = extractCopyableConversation(block);
-    if (!conversation) {
-      continue;
-    }
-    eligibleBlocks.push(block);
-    const selected = options.applyHighlights === true
-      ? getEffectiveConversationSelection(block, conversation) === MANUAL_SELECTION_INCLUDE_VALUE
-      : isConversationSelectedForSummary(block, conversation);
-    if (selected) {
-      selectedBlocks.push(block);
-    }
-  }
-
-  updateManualSelectionSummaryUi(selectedBlocks.length, eligibleBlocks.length);
-
-  if (!options || options.applyHighlights !== true) {
-    return;
-  }
+  const snapshot = await getSelectionSnapshot(options.selectionOptions);
+  for (const entry of snapshot.entries) refreshConversationSelectionButtonState(entry.block, entry);
+  const eligible = snapshot.entries.filter((entry) => entry.conversation && entry.decision.skipped !== "deduped" && !(snapshot.options.ignoreComments && entry.standalone));
+  const selected = eligible.filter((entry) => entry.decision.selected);
+  updateManualSelectionSummaryUi(selected.length, eligible.length);
+  if (options.applyHighlights !== true) return;
 
   MANUAL_SELECTION_SUPPRESS_NEXT_MUTATION_REFRESH = true;
   setTimeout(() => {
     MANUAL_SELECTION_SUPPRESS_NEXT_MUTATION_REFRESH = false;
   }, 0);
-  applySelectionHighlights(eligibleBlocks, selectedBlocks.filter((block) => eligibleBlocks.includes(block)));
+  applySelectionHighlights(eligible.map((entry) => entry.block), selected.map((entry) => entry.block));
 }
 
 function queueManualSelectionUiRefresh(options = {}) {
@@ -107,17 +82,18 @@ function queueManualSelectionUiRefresh(options = {}) {
   return nextPromise;
 }
 
-function refreshConversationSelectionButtonState(block) {
-  const conversation = extractCopyableConversation(block);
+function refreshConversationSelectionButtonState(block, entry = captureSelectionSnapshot().byBlock.get(block)) {
+  const conversation = entry?.conversation;
   if (!conversation) {
     return;
   }
   const conversationKey = buildConversationSelectionKey(block, conversation);
-  const selectionMode = conversationKey ? getEffectiveConversationSelection(block, conversation) : null;
+  const selectionMode = entry?.decision.selected ? "include" : "exclude";
   const button = block.querySelector(`.${MANUAL_SELECTION_BUTTON_CLASS}`);
   if (button instanceof HTMLButtonElement) {
     const isQuoteReply = isStandaloneTimelineComment(block) && conversation.rootComment?.nodeType === "quote_reply";
-    updateManualSelectionButtonVisualState(button, selectionMode, isQuoteReply);
+    const explanation = entry.decision.skipped ? `Excluded: ${entry.decision.skipped.replaceAll("_", " ")}. ${entry.decision.manualMode ? "Saved choice" : "Default"}: ${entry.decision.preference}.` : `Included: ${entry.decision.reason.replaceAll("_", " ")}.`;
+    updateManualSelectionButtonVisualState(button, selectionMode, isQuoteReply, explanation, entry.decision.preference);
     const nextMode = selectionMode || "none";
     if (button.getAttribute("data-gpre-selection-mode") !== nextMode) {
       button.setAttribute("data-gpre-selection-mode", nextMode);

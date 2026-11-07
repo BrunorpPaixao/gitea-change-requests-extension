@@ -1,5 +1,6 @@
 /** Quote export controls and non-interactive, fading connections to original comments. */
 function refreshQuoteReplyUi() {
+  refreshQuoteMatchExplanations();
   const activeQuotes = new Set(QUOTE_REPLY_RECORDS.map((record) => record.quote));
   for (const quote of document.querySelectorAll('[data-gpre-node-type="quote"]')) {
     if (activeQuotes.has(quote)) continue;
@@ -178,4 +179,29 @@ function ensureQuoteReplyStyles() {
     #gpre-quote-connections { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; color: var(--color-primary, #4a90d9); }
   `;
   document.head.appendChild(style);
+}
+
+/** Explain preserved quotes without turning diagnostic similarity into relationships. */
+function refreshQuoteMatchExplanations() {
+  const messages = {
+    no_earlier_source: "No earlier original found. Quote kept in export.",
+    ambiguous: "Multiple earlier originals match. Quote kept in export.",
+    partial_only: "Only a partial text match found. Quote kept in export.",
+    unsupported_markdown: "Quote formatting cannot be safely separated. Quote kept in export.",
+  };
+  const unmatched = new Set(QUOTE_REPLY_DIAGNOSTICS.filter((item) => item.status !== "matched").map((item) => item.quote));
+  for (const note of document.querySelectorAll(".gpre-quote-note")) {
+    if (!unmatched.has(note.parentElement)) note.remove();
+  }
+  for (const item of QUOTE_REPLY_DIAGNOSTICS) {
+    if (item.status === "matched") continue;
+    let note = item.quote.querySelector(":scope > .gpre-quote-note");
+    if (!note) {
+      note = document.createElement("small"); note.className = "gpre-quote-note";
+      note.setAttribute("data-gpre-quote-ui", "1");
+      note.style.cssText = "display:block;margin-bottom:6px;font-size:11px;line-height:1.4;color:var(--color-text-light,#8c98a8)";
+      item.quote.prepend(note);
+    }
+    if (note.textContent !== messages[item.status]) note.textContent = messages[item.status];
+  }
 }
